@@ -1,6 +1,10 @@
 # Compiled class file
 *.class
 
+# IDEA project file
+*.iml
+.idea/
+
 # Log file
 *.log
 
