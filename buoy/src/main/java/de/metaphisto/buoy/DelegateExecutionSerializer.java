@@ -1,6 +1,7 @@
 package de.metaphisto.buoy;
 
 import de.metaphisto.buoy.persistence.AbstractPersistenceTechnology;
+import de.metaphisto.buoy.persistence.PersistenceFormat;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.camunda.bpm.engine.impl.persistence.entity.ExecutionEntity;
 import org.camunda.bpm.engine.variable.impl.value.NullValueImpl;
@@ -13,7 +14,7 @@ import java.nio.ByteBuffer;
 
 import static de.metaphisto.buoy.persistence.AbstractStoreHolder.WriteMode.ONLY_FLUSH_IF_BUFFER_FULL;
 
-public class AnkerSerializer {
+public class DelegateExecutionSerializer {
 
     private static final boolean WRITE_PARENT = false;
 
@@ -21,16 +22,16 @@ public class AnkerSerializer {
      * Schreibt die Variablen der DelegateExecution unter Verwendung des ByteBuffers in den FileChannel.
      *
      * @param execution  die zu schreibenden Variablen
-     * @param schluessel
+     * @param key
      * @param byteBuffer der zu benutzende Puffer
      * @param ziel       der Channel, in den geschrieben wird
      * @throws IOException wenn etwas schiefgeht
      */
-    public static void serialisiereAnker(DelegateExecution execution, String schluessel, ByteBuffer byteBuffer, AbstractPersistenceTechnology ziel) throws IOException {
+    public static void serialisiereAnker(DelegateExecution execution, String key, ByteBuffer byteBuffer, AbstractPersistenceTechnology ziel, PersistenceFormat persistenceFormat) throws IOException {
         // Benutzt Locks, weil die Schreiboperationen hintereinander passieren m�ssen
         boolean locked = false;
         try {
-            locked = ziel.beforeFirstWriteCommand(byteBuffer, schluessel, locked);
+            locked = ziel.beforeFirstWriteCommand(byteBuffer, key, locked);
             for (String variable : execution.getVariableNamesLocal()) {
                 String variableType;
                 String value;
@@ -48,20 +49,18 @@ public class AnkerSerializer {
                     variableType = "nicht erwarteter Typ: " + typedValue.getClass().getSimpleName();
                     value = typedValue.toString();
                 }
-                locked = ziel.appendNext(variable + "[" + variableType + ":" + value.length() + ":", schluessel, byteBuffer, locked, ONLY_FLUSH_IF_BUFFER_FULL);
-                locked = ziel.appendNext(value, schluessel, byteBuffer, locked, ONLY_FLUSH_IF_BUFFER_FULL);
-                locked = ziel.appendNext("]", schluessel, byteBuffer, locked, ONLY_FLUSH_IF_BUFFER_FULL);
+                locked = persistenceFormat.writeVariable(variable, variableType, value, key, byteBuffer, ziel, locked);
             }
-            locked = locked | ziel.appendNext("}", schluessel, byteBuffer, locked, ONLY_FLUSH_IF_BUFFER_FULL);
+            locked = locked | ziel.appendNext("}", key, byteBuffer, locked, ONLY_FLUSH_IF_BUFFER_FULL);
             if (WRITE_PARENT) {
                 //TODO: die aufrufenden Prozesse �ber this.parent.super.parent.parent.super.... holen
                 ExecutionEntity parent = ((ExecutionEntity) execution).getParent();
                 if (parent != null) {
-                    ziel.appendNext("parent:", schluessel, byteBuffer, locked, ONLY_FLUSH_IF_BUFFER_FULL);
-                    serialisiereAnker(parent, schluessel, byteBuffer, ziel);
+                    ziel.appendNext("parent:", key, byteBuffer, locked, ONLY_FLUSH_IF_BUFFER_FULL);
+                    serialisiereAnker(parent, key, byteBuffer, ziel, persistenceFormat);
                 }
             }
-            locked = ziel.afterLastWriteCommand(byteBuffer, schluessel, locked);
+            locked = ziel.afterLastWriteCommand(byteBuffer, key, locked);
         } finally {
             if (locked) {
                 ziel.unlock();

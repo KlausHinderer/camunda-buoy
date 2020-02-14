@@ -1,6 +1,7 @@
 package de.metaphisto.buoy;
 
 import de.metaphisto.buoy.persistence.LogFilePersistence;
+import de.metaphisto.buoy.persistence.PersistenceFormat;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.camunda.bpm.engine.impl.persistence.entity.ExecutionEntity;
 import org.camunda.bpm.engine.variable.impl.value.NullValueImpl;
@@ -95,7 +96,7 @@ public class AnkerManager {
         }
         try {
             String schluessel = baueSchluessel(correlationId, delegateExecution.getCurrentActivityId());
-            AnkerSerializer.serialisiereAnker(((ExecutionEntity) delegateExecution).getParent(), schluessel, byteBuffer, currentPersistence);
+            DelegateExecutionSerializer.serialisiereAnker(((ExecutionEntity) delegateExecution).getParent(), schluessel, byteBuffer, currentPersistence, new PersistenceFormat());
             expiringCache.put(schluessel, currentPersistence.getAnkerPackageName());
         } finally {
             synchronized (AnkerManager.class) {

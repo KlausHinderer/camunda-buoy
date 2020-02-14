@@ -22,7 +22,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(MockitoJUnitRunner.class)
-public class AnkerSerializerTest {
+public class DelegateExecutionSerializerTest {
 
     public static final String TEST_STRING = "TEST_STRING";
 
