@@ -15,10 +15,6 @@ public class RedisPersistence extends AbstractPersistenceTechnology<SocketChanne
     private static final ByteBuffer COMMAND_TERMINATOR = ByteBuffer.allocateDirect(2);
     private static final byte[] CR_LF = "\r\n".getBytes();
 
-    private int bytesAvailableForKey = -1;
-
-    private String keyForRead = null;
-
     public RedisPersistence() {
         storeHolder = new SocketStoreHolder("");
         COMMAND_TERMINATOR.clear();
@@ -98,14 +94,12 @@ public class RedisPersistence extends AbstractPersistenceTechnology<SocketChanne
     }
 
     @Override
-    public boolean prepareForRead(String key, boolean locked, ByteBuffer byteBuffer) throws IOException {
+    public ReadAction prepareForRead(String key, boolean locked, ByteBuffer byteBuffer) throws IOException {
         if (!locked) {
             storeHolder.lock();
             locked = true;
         }
-        keyForRead = key;
-        bytesAvailableForKey = -1;
-
+        ReadAction readAction = null;
         AbstractStoreHolder.schreibeString("*2\r\n$3\r\nGET\r\n$" + key.length() + "\r\n" + key + "\r\n", byteBuffer, storeHolder, locked, AbstractStoreHolder.WriteMode.FORCE_FLUSH_BUFFER_TO_CHANNEL);
 
         String responseLengthString = null;
@@ -117,35 +111,36 @@ public class RedisPersistence extends AbstractPersistenceTechnology<SocketChanne
                 if (b == "$".getBytes()[0]) {
                     responseLengthString = "";
                 } else if (b == "\n".getBytes()[0]) {
-                    bytesAvailableForKey = Integer.valueOf(responseLengthString);
+                    readAction = new ReadAction(locked, key, Integer.valueOf(responseLengthString));
                     break;
                 } else if (b == "\r".getBytes()[0]) {
                 } else {
                     responseLengthString += new String(new byte[]{b});
                 }
             }
-            if (bytesAvailableForKey < 0) {
+            if (readAction == null) {
                 byteBuffer.flip();
             }
-        } while (bytesAvailableForKey < 0);
+        } while (readAction == null);
 
+        int bytesAvailableForKey = readAction.getBytesAvailableForKey();
         bytesAvailableForKey -= byteBuffer.remaining();
         //add two bytes for \r\n
         bytesAvailableForKey += 2;
-        return locked;
+        readAction.setBytesAvailableForKey(bytesAvailableForKey);
+        return readAction;
     }
 
     @Override
-    public int readNext(String key, ByteBuffer byteBuffer) throws IOException {
-        if (!key.equals(keyForRead)) {
-            throw new RuntimeException("readNext invoked for key " + key + " but prepareForRead invoked for key " + keyForRead);
-        }
+    public int readNext(ReadAction readAction, ByteBuffer byteBuffer) throws IOException {
         byteBuffer.clear();
+        int bytesAvailableForKey = readAction.getBytesAvailableForKey();
         if (bytesAvailableForKey <= 0) {
             return -1;
         }
         int read = storeHolder.getChannel().read(byteBuffer);
         bytesAvailableForKey -= read;
+        readAction.setBytesAvailableForKey(bytesAvailableForKey);
         byteBuffer.flip();
         return bytesAvailableForKey;
     }

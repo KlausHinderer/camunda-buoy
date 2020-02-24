@@ -24,12 +24,12 @@ public class LogFilePersistence extends AbstractPersistenceTechnology<FileChanne
     }
 
     @Override
-    public boolean prepareForRead(String key, boolean locked, ByteBuffer byteBuffer) {
-        return false;
+    public ReadAction prepareForRead(String key, boolean locked, ByteBuffer byteBuffer) throws IOException {
+        return null;
     }
 
     @Override
-    public int readNext(String key, ByteBuffer byteBuffer) throws IOException {
+    public int readNext(ReadAction readAction, ByteBuffer byteBuffer) throws IOException {
         return 0;
     }
 

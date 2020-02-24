@@ -76,6 +76,7 @@ public class AnkerManager {
     public boolean ankerExists(String correlationId, DelegateExecution delegateExecution) {
         boolean returnValue = false;
         String prozessSchrittId = delegateExecution.getCurrentActivityId();
+        //TODO: Move into persistenceTechnology, this has to be cluster-wide
         if (expiringCache.get(baueSchluessel(correlationId, prozessSchrittId)) != null) {
             returnValue = true;
         }

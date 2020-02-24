@@ -122,14 +122,14 @@ public abstract class AbstractPersistenceTechnology<T extends WritableByteChanne
         storeHolder.unlock();
     }
 
-    public abstract boolean prepareForRead(String key, boolean locked, ByteBuffer byteBuffer) throws IOException;
+    public abstract ReadAction prepareForRead(String key, boolean locked, ByteBuffer byteBuffer) throws IOException;
 
     /**
      * Reads the next available bytes for key into the bytebuffer. Caller must first invoke once prepareForRead for the key.
      *
-     * @param key        the key to be read
+     * @param readAction the readAction
      * @param byteBuffer the target for the content. Will be cleared before reading.
      * @return the number of remaining bytes for the key or -1 if the end has been reached
      */
-    public abstract int readNext(String key, ByteBuffer byteBuffer) throws IOException;
+    public abstract int readNext(ReadAction readAction, ByteBuffer byteBuffer) throws IOException;
 }
