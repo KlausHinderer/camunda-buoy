@@ -7,46 +7,43 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-import static de.metaphisto.buoy.persistence.AbstractStoreHolder.WriteMode.ONLY_FLUSH_IF_BUFFER_FULL;
-
 /**
  *
  */
 public class PersistenceFormat {
     public boolean writeVariable(String variableName, String variableType, String variableValue, String key, ByteBuffer byteBuffer, AbstractPersistenceTechnology persistenceTechnology, boolean locked) throws IOException {
-        locked = persistenceTechnology.appendNext("V_"+variableName + "[" + variableType + ":" + variableValue.length() + ":", key, byteBuffer, locked, ONLY_FLUSH_IF_BUFFER_FULL);
-        locked = persistenceTechnology.appendNext(variableValue, key, byteBuffer, locked, ONLY_FLUSH_IF_BUFFER_FULL);
-        locked = persistenceTechnology.appendNext("]", key, byteBuffer, locked, ONLY_FLUSH_IF_BUFFER_FULL);
+        variableState = VariableNameState.getInstance();
+        //Serialize name
+        locked = variableState.serialize(variableName, variableType, variableValue, key, byteBuffer, persistenceTechnology, locked);
+        //Serialize type
+        variableState = variableState.nextState();
+        locked = variableState.serialize(variableName, variableType, variableValue, key, byteBuffer, persistenceTechnology, locked);
+        //Serialize Value
+        variableState = variableState.nextState();
+        locked = variableState.serialize(variableName, variableType, variableValue, key, byteBuffer, persistenceTechnology, locked);
+
+        variableState = null;
         return locked;
     }
 
     //Points to the execution or to a parent
     private DelegateExecution currentExecution = null;
 
+    private VariableState variableState;
+    List<String> readValues = new ArrayList<>(3);
+
     public void readChunk(String key, ByteBuffer byteBuffer, DelegateExecution delegateExecution) {
-
-    }
-
-    //TODO pack everything into an Action
-    List<Byte> variableBuffer;
-    String variableName;
-
-    protected void startVariable(ByteBuffer byteBuffer){
-        variableBuffer = new ArrayList<>(64);
-        continueVariable(byteBuffer);
-    }
-
-    protected void continueVariable(ByteBuffer byteBuffer){
-        byte b = 0x00;
-        while (byteBuffer.hasRemaining() && (b = byteBuffer.get()) != "[".getBytes()[0]) {
-            variableBuffer.add( b);
+        if (variableState == null) {
+            variableState = VariableNameState.getInstance();
+            readValues.clear();
         }
-        if(b =="[".getBytes()[0]) {
-            byte[] read = new byte[variableBuffer.size()];
-            for (int i = variableBuffer.size()-1; i >=0 ; i--) {
-                read[i] = variableBuffer.get(i);
+        do {
+            boolean stateComplete = variableState.consume(byteBuffer);
+            if (stateComplete) {
+                //transition to next state
+                readValues.add(variableState.getValue());
+                variableState = variableState.nextState();
             }
-            variableName = new String(read);
-        }
+        } while (byteBuffer.hasRemaining());
     }
 }
