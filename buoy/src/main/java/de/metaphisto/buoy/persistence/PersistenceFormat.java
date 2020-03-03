@@ -12,8 +12,11 @@ import java.util.List;
  */
 public class PersistenceFormat {
     public boolean writeVariable(String variableName, String variableType, String variableValue, String key, ByteBuffer byteBuffer, AbstractPersistenceTechnology persistenceTechnology, boolean locked) throws IOException {
-        variableState = VariableNameState.getInstance();
+        variableState = StartScopeOrVariableState.getInstance();
+        //Serialize prefix
+        locked = variableState.serialize(variableName, variableType, variableValue, key, byteBuffer, persistenceTechnology, locked);
         //Serialize name
+        variableState = variableState.nextState();
         locked = variableState.serialize(variableName, variableType, variableValue, key, byteBuffer, persistenceTechnology, locked);
         //Serialize type
         variableState = variableState.nextState();
@@ -26,6 +29,15 @@ public class PersistenceFormat {
         return locked;
     }
 
+    public boolean beginScope(String scopeName, String key, ByteBuffer byteBuffer, AbstractPersistenceTechnology persistenceTechnology, boolean locked) {
+        return locked;
+    }
+
+    public boolean endScope(String scopeName, String key, ByteBuffer byteBuffer, AbstractPersistenceTechnology persistenceTechnology, boolean locked) {
+        return locked;
+    }
+
+
     //Points to the execution or to a parent
     private DelegateExecution currentExecution = null;
 
@@ -34,14 +46,21 @@ public class PersistenceFormat {
 
     public void readChunk(String key, ByteBuffer byteBuffer, DelegateExecution delegateExecution) {
         if (variableState == null) {
-            variableState = VariableNameState.getInstance();
+            variableState = StartScopeOrVariableState.getInstance();
             readValues.clear();
         }
         do {
             boolean stateComplete = variableState.consume(byteBuffer);
+            if(variableState instanceof StartScopeOrVariableState) {
+                if(((StartScopeOrVariableState)variableState).isStartScope()) {
+                    delegateExecution = delegateExecution.getSuperExecution();
+                }
+            }
             if (stateComplete) {
                 //transition to next state
-                readValues.add(variableState.getValue());
+                if(variableState.hasOutput()) {
+                    readValues.add(variableState.getValue());
+                }
                 variableState = variableState.nextState();
             }
         } while (byteBuffer.hasRemaining());

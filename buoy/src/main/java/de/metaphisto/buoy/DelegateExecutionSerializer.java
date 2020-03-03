@@ -46,7 +46,7 @@ public class DelegateExecutionSerializer {
                     variableType = "NullValueImpl";
                     value = "null";
                 } else {
-                    variableType = "nicht erwarteter Typ: " + typedValue.getClass().getSimpleName();
+                    variableType = "unexpected type: " + typedValue.getClass().getName();
                     value = typedValue.toString();
                 }
                 locked = persistenceFormat.writeVariable(variable, variableType, value, key, byteBuffer, ziel, locked);

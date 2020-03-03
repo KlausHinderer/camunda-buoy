@@ -47,6 +47,57 @@ abstract class VariableState {
         return new String(content);
     }
 
+    public abstract boolean hasOutput();
+
+}
+
+class StartScopeOrVariableState extends VariableState {
+
+    private static final StartScopeOrVariableState INSTANCE = new StartScopeOrVariableState();
+    public static final byte START_VARIABLE = "V".getBytes()[0];
+    private VariableState nextState = null;
+
+    private StartScopeOrVariableState(){}
+
+    public static StartScopeOrVariableState getInstance(){
+        INSTANCE.nextState = null;
+        return INSTANCE;
+    }
+
+    public boolean isStartScope(){
+        return ! (nextState instanceof VariableNameState);
+    }
+
+    @Override
+    public boolean consume(ByteBuffer byteBuffer) {
+        if(byteBuffer.hasRemaining()) {
+            byte b = byteBuffer.get();
+            if(START_VARIABLE == b) {
+                nextState = VariableNameState.getInstance();
+                return true;
+            }else {
+
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public VariableState nextState() {
+        return nextState;
+    }
+
+    @Override
+    public boolean serialize(String variableName, String variableType, String variableValue, String key, ByteBuffer byteBuffer, AbstractPersistenceTechnology persistenceTechnology, boolean locked) throws IOException {
+        nextState = VariableNameState.getInstance();
+        return persistenceTechnology.appendNext("V", key, byteBuffer, locked, ONLY_FLUSH_IF_BUFFER_FULL);
+    }
+
+    @Override
+    public boolean hasOutput() {
+        return false;
+    }
 }
 
 
@@ -91,7 +142,12 @@ class VariableNameState extends VariableState {
 
     @Override
     public boolean serialize(String variableName, String variableType, String variableValue, String key, ByteBuffer byteBuffer, AbstractPersistenceTechnology persistenceTechnology, boolean locked) throws IOException {
-        return persistenceTechnology.appendNext("V_" + variableName + "[", key, byteBuffer, locked, ONLY_FLUSH_IF_BUFFER_FULL);
+        return persistenceTechnology.appendNext("_" + variableName + "[", key, byteBuffer, locked, ONLY_FLUSH_IF_BUFFER_FULL);
+    }
+
+    @Override
+    public boolean hasOutput() {
+        return true;
     }
 }
 
@@ -129,6 +185,11 @@ class ReadVariableType extends VariableState {
     public boolean serialize(String variableName, String variableType, String variableValue, String key, ByteBuffer byteBuffer, AbstractPersistenceTechnology persistenceTechnology, boolean locked) throws IOException {
         return persistenceTechnology.appendNext(variableType + ":", key, byteBuffer, locked, ONLY_FLUSH_IF_BUFFER_FULL);
     }
+
+    @Override
+    public boolean hasOutput() {
+        return true;
+    }
 }
 
 class ReadVariableValue extends VariableState {
@@ -142,15 +203,17 @@ class ReadVariableValue extends VariableState {
         INSTANCE.variableBuffer.clear();
         INSTANCE.prefixDone = false;
         INSTANCE.remainingLength = Integer.MAX_VALUE;
+        INSTANCE.valueDone = false;
         return INSTANCE;
     }
 
     private boolean prefixDone = false;
+    private boolean valueDone = false;
     private int remainingLength = Integer.MAX_VALUE;
 
     @Override
     public boolean consume(ByteBuffer byteBuffer) {
-        while (byteBuffer.hasRemaining() && remainingLength > 0) {
+        while (byteBuffer.hasRemaining() && !valueDone) {
             byte b = byteBuffer.get();
             if (!prefixDone) {
                 if (COLON_TERMINATOR == b) {
@@ -163,14 +226,22 @@ class ReadVariableValue extends VariableState {
             } else {
                 variableBuffer.add(b);
                 remainingLength--;
+                if(remainingLength == 0) {
+                    valueDone = true;
+                }
             }
         }
-        return remainingLength <= 0;
+        //read the closing bracket
+        if(valueDone && byteBuffer.hasRemaining()){
+            byte b = byteBuffer.get();
+            return true;
+        }
+        return false;
     }
 
     @Override
     public VariableState nextState() {
-        return VariableNameState.getInstance();
+        return StartScopeOrVariableState.getInstance();
     }
 
     @Override
@@ -179,5 +250,10 @@ class ReadVariableValue extends VariableState {
         locked = persistenceTechnology.appendNext(variableValue, key, byteBuffer, locked, ONLY_FLUSH_IF_BUFFER_FULL);
         locked = persistenceTechnology.appendNext("]", key, byteBuffer, locked, ONLY_FLUSH_IF_BUFFER_FULL);
         return locked;
+    }
+
+    @Override
+    public boolean hasOutput() {
+        return true;
     }
 }
