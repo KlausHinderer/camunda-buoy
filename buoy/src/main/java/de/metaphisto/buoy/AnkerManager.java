@@ -18,14 +18,6 @@ import java.nio.ByteBuffer;
 import java.util.Stack;
 import java.util.concurrent.locks.LockSupport;
 
-/**
- * Serializer:
- * start(String)
- * schreibe(String)
- * write(String)
- * end()
- */
-
 public class AnkerManager {
 
     private static final Logger LOG = LoggerFactory.getLogger(AnkerManager.class);
@@ -50,6 +42,10 @@ public class AnkerManager {
         } else {
             throw new RuntimeException("Already initialized");
         }
+    }
+
+    public static synchronized boolean isInitialized() {
+        return instance != null;
     }
 
     public static synchronized AnkerManager getInstance() {
@@ -97,7 +93,7 @@ public class AnkerManager {
         }
         try {
             String schluessel = baueSchluessel(correlationId, delegateExecution.getCurrentActivityId());
-            DelegateExecutionSerializer.serialisiereAnker(((ExecutionEntity) delegateExecution).getParent(), schluessel, byteBuffer, currentPersistence, new PersistenceFormat());
+            DelegateExecutionSerializer.serialisiereAnker(delegateExecution, schluessel, byteBuffer, currentPersistence, new PersistenceFormat());
             expiringCache.put(schluessel, currentPersistence.getAnkerPackageName());
         } finally {
             synchronized (AnkerManager.class) {
@@ -131,22 +127,23 @@ public class AnkerManager {
             }
         }
         if (ankerEintrag != null) {
-            schreibeProzessVariablen(ankerEintrag, ((ExecutionEntity) delegateExecution).getParent());
+            schreibeProzessVariablen(ankerEintrag, ((ExecutionEntity) delegateExecution));
         }
     }
 
 
     private void schreibeProzessVariablen(String ankerEintrag, ExecutionEntity executionEntity) {
+        PersistenceFormat persistenceFormat = new PersistenceFormat();
         String variablen = ankerEintrag.substring(ankerEintrag.indexOf('{') + 1);
         variablen = variablen.substring(0, variablen.lastIndexOf('}'));
-        int ende;
-        while ((ende = variablen.indexOf(']')) >= 0) {
-            String name = variablen.substring(0, variablen.indexOf('['));
-            String typ = variablen.substring(variablen.indexOf('[') + 1, variablen.indexOf(':'));
-            String wertLength = variablen.substring(variablen.indexOf(':'), variablen.lastIndexOf(':'));
-            String wert = variablen.substring(variablen.lastIndexOf(':') + 1, ende);
+        ByteBuffer byteBuffer = ByteBuffer.wrap(variablen.getBytes());
+        persistenceFormat.readChunk("key", byteBuffer, null);
+        for (int i = 0; i+2 < persistenceFormat.readValues.size() ; i+=3) {
+            String name = persistenceFormat.readValues.get(i);
+            String type = persistenceFormat.readValues.get(i+1);
+            String wert = persistenceFormat.readValues.get(i+2);
             TypedValue typedValue;
-            switch (typ) {
+            switch (type) {
                 case "NullValueImpl":
                     typedValue = NullValueImpl.INSTANCE;
                     break;
@@ -157,10 +154,9 @@ public class AnkerManager {
                     typedValue = new PrimitiveTypeValueImpl.LongValueImpl(Long.valueOf(wert));
                     break;
                 default:
-                    typedValue = new ObjectValueImpl(null, wert, "application/x-java-serialized-object", typ, false);
+                    typedValue = new ObjectValueImpl(null, wert, "application/x-java-serialized-object", type, false);
             }
             executionEntity.setVariableLocal(name, typedValue, executionEntity);
-            variablen = variablen.substring(ende + 1);
         }
     }
 }

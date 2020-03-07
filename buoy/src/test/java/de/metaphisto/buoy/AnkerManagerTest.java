@@ -64,7 +64,6 @@ public class AnkerManagerTest {
         ankerManager = AnkerManager.getInstance();
         Set<String> prozessVariablen = new HashSet<>();
         prozessVariablen.add("processContainer");
-        when(delegateExecution.getParent()).thenReturn(delegateExecution);
         when(delegateExecution.getVariableNamesLocal()).thenReturn(prozessVariablen);
         when(delegateExecution.getVariableInstance(eq("processContainer"))).thenReturn(coreVariableInstance);
         when(coreVariableInstance.getTypedValue(eq(false))).thenReturn(processContainerObject);
@@ -82,7 +81,6 @@ public class AnkerManagerTest {
     public void testLese() throws IOException {
         Context.setCommandContext(commandContext);
         Context.setProcessEngineConfiguration(processEngineConfiguration);
-        when(leereDelegateExecution.getParent()).thenReturn(leereDelegateExecution);
         ankerManager.rollover();
         ankerManager.schreibeAnker("2", delegateExecution);
         assertTrue(ankerManager.ankerExists("2", delegateExecution));

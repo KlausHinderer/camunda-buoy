@@ -42,7 +42,7 @@ public class PersistenceFormat {
     private DelegateExecution currentExecution = null;
 
     private VariableState variableState;
-    List<String> readValues = new ArrayList<>(3);
+    public List<String> readValues = new ArrayList<>(3);
 
     public void readChunk(String key, ByteBuffer byteBuffer, DelegateExecution delegateExecution) {
         if (variableState == null) {
