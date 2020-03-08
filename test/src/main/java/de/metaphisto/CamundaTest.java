@@ -1,6 +1,6 @@
 package de.metaphisto;
 
-import de.metaphisto.buoy.AnkerManager;
+import de.metaphisto.buoy.Idempotence;
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.ProcessEngineConfiguration;
 import org.camunda.bpm.engine.runtime.ProcessInstanceWithVariables;
@@ -25,7 +25,7 @@ public class CamundaTest {
 
     static {
         try {
-            AnkerManager.initialize("target/anker");
+            Idempotence.initialize("target/anker");
         } catch (RuntimeException ex) {
             //ignore already-initialized exceptions
         }

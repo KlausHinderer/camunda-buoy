@@ -1,6 +1,6 @@
 package de.metaphisto.buoy.delegate;
 
-import de.metaphisto.buoy.AnkerManager;
+import de.metaphisto.buoy.Idempotence;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.camunda.bpm.engine.delegate.JavaDelegate;
 
@@ -11,15 +11,15 @@ import java.util.Map;
  *
  */
 public class FirstDelegate implements JavaDelegate {
-    private AnkerManager ankerManager = AnkerManager.getInstance();
+    private Idempotence idempotence = Idempotence.getInstance();
 
     private static Map<String, String> nonXAResource = new HashMap<>();
 
     @Override
     public void execute(DelegateExecution execution) throws Exception {
         String correlationId = (String) execution.getVariable("ID");
-        if(ankerManager.ankerExists(correlationId,execution)) {
-            ankerManager.leseAnkerInProzessVariablen(correlationId, execution);
+        if(idempotence.entryExists(correlationId,execution)) {
+            idempotence.readBuoyStateIntoProcessVariables(correlationId, execution);
         }else {
 
             //begin custom block
@@ -30,7 +30,7 @@ public class FirstDelegate implements JavaDelegate {
             execution.setVariable("written","true");
             //end custom block
 
-            ankerManager.schreibeAnker(correlationId, execution);
+            idempotence.putBuoy(correlationId, execution);
         }
     }
 }

@@ -30,7 +30,7 @@
  */
 package de.metaphisto;
 
-import de.metaphisto.buoy.AnkerManager;
+import de.metaphisto.buoy.Idempotence;
 import org.camunda.bpm.engine.impl.bpmn.helper.BpmnProperties;
 import org.camunda.bpm.engine.impl.cfg.*;
 import org.camunda.bpm.engine.impl.context.Context;
@@ -64,7 +64,7 @@ import java.util.List;
 public class ConcurrencyTest {
 
     public static final String ACTIVITY = "Activity";
-    private static AnkerManager ankerManager;
+    private static Idempotence idempotence;
     private static TransactionContextFactory transactionContextFactory = new TransactionContextFactory() {
         @Override
         public TransactionContext openTransactionContext(CommandContext commandContext) {
@@ -106,11 +106,11 @@ public class ConcurrencyTest {
 
     static {
         try {
-            AnkerManager.initialize("target/anker");
+            Idempotence.initialize("target/anker");
         } catch (RuntimeException ex) {
             //ignore already-initialized exceptions
         }
-        ankerManager = AnkerManager.getInstance();
+        idempotence = Idempotence.getInstance();
     }
 
     private String id1, id2;
@@ -120,7 +120,7 @@ public class ConcurrencyTest {
             ExecutionEntity delegateExecution = getDelegateExecution();
             int id = (int) (Math.random()*100000);
             try {
-                AnkerManager.leseAnkerInProzessVariablen(id+"",null,null,delegateExecution);
+                AnkerManager.readBuoyStateIntoProcessVariables(id+"",null,null,delegateExecution);
             } catch (Exception e) {
                 r.r3 = "nicht gefunden";
                 return;
@@ -172,7 +172,7 @@ public class ConcurrencyTest {
         TypedValue typedValue = new PrimitiveTypeValueImpl.StringValueImpl(wert);
         delegateExecution.getParent().setVariableLocal("var", typedValue, delegateExecution.getParent());
         try {
-            ankerManager.schreibeAnker(id1, delegateExecution);
+            idempotence.putBuoy(id1, delegateExecution);
         } catch (IOException e) {
             r.r1 = e.getMessage();
         }
@@ -187,7 +187,7 @@ public class ConcurrencyTest {
         TypedValue typedValue = new PrimitiveTypeValueImpl.StringValueImpl(wert);
         delegateExecution.getParent().setVariableLocal("var", typedValue, delegateExecution.getParent());
         try {
-            ankerManager.schreibeAnker(id2, delegateExecution);
+            idempotence.putBuoy(id2, delegateExecution);
         } catch (IOException e) {
             r.r2 = e.getMessage();
         }
@@ -198,8 +198,8 @@ public class ConcurrencyTest {
         r.r4 = "OK";
         ExecutionEntity delegateExecution = getDelegateExecution();
         try {
-            ankerManager.leseAnkerInProzessVariablen(id1, delegateExecution);
-            ankerManager.leseAnkerInProzessVariablen(id2, delegateExecution);
+            idempotence.readBuoyStateIntoProcessVariables(id1, delegateExecution);
+            idempotence.readBuoyStateIntoProcessVariables(id2, delegateExecution);
         } catch (Exception e) {
             r.r4 = "NOK";
             return;

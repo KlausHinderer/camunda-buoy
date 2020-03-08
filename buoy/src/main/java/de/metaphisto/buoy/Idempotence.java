@@ -18,16 +18,16 @@ import java.nio.ByteBuffer;
 import java.util.Stack;
 import java.util.concurrent.locks.LockSupport;
 
-public class AnkerManager {
+public class Idempotence {
 
-    private static final Logger LOG = LoggerFactory.getLogger(AnkerManager.class);
-    private static AnkerManager instance = null;
+    private static final Logger LOG = LoggerFactory.getLogger(Idempotence.class);
+    private static Idempotence instance = null;
     private final String filePrefix;
     private LogFilePersistence output;
     private ByteBufferObjectPool byteBufferObjectPool = new ByteBufferObjectPool(10);
     private ExpiringCache expiringCache = new ExpiringCache(60 * 60 * 1000);
 
-    private AnkerManager(String filePrefix) {
+    private Idempotence(String filePrefix) {
         this.filePrefix = filePrefix;
         try {
             output = new LogFilePersistence(getFilename());
@@ -38,7 +38,7 @@ public class AnkerManager {
 
     public static synchronized void initialize(String filePrefix) {
         if (instance == null) {
-            instance = new AnkerManager(filePrefix);
+            instance = new Idempotence(filePrefix);
         } else {
             throw new RuntimeException("Already initialized");
         }
@@ -48,7 +48,7 @@ public class AnkerManager {
         return instance != null;
     }
 
-    public static synchronized AnkerManager getInstance() {
+    public static synchronized Idempotence getInstance() {
         if (instance == null) {
             throw new RuntimeException("not initialized");
         }
@@ -69,72 +69,79 @@ public class AnkerManager {
         }
     }
 
-    public boolean ankerExists(String correlationId, DelegateExecution delegateExecution) {
+    public boolean entryExists(String correlationId, DelegateExecution delegateExecution) {
         boolean returnValue = false;
         String prozessSchrittId = delegateExecution.getCurrentActivityId();
         //TODO: Move into persistenceTechnology, this has to be cluster-wide
-        if (expiringCache.get(baueSchluessel(correlationId, prozessSchrittId)) != null) {
+        if (expiringCache.get(constructIdempotenceKey(correlationId, prozessSchrittId)) != null) {
             returnValue = true;
         }
         return returnValue;
     }
 
-    private String baueSchluessel(String correlationId, String prozessSchrittId) {
-        return String.join("_", correlationId, prozessSchrittId);
+    private String constructIdempotenceKey(String correlationId, String processStepId) {
+        return String.join("_", correlationId, processStepId);
     }
 
-    public void schreibeAnker(String correlationId, DelegateExecution delegateExecution) throws IOException {
+    /**
+     * Puts out a buoy to mark the course a processinstance has taken
+     * @param correlationId the correlationId
+     * @param delegateExecution the delegateExecution the current step
+     * @throws IOException
+     */
+    public void putBuoy(String correlationId, DelegateExecution delegateExecution) throws IOException {
         long start = System.nanoTime();
         ByteBuffer byteBuffer = byteBufferObjectPool.borrowObject();
         LogFilePersistence currentPersistence = output;
-        synchronized (AnkerManager.class) {
+        synchronized (Idempotence.class) {
             // verhindern, dass ein Rollover/Schließen des FileChannels stattfindet während des register
             currentPersistence.register();
         }
         try {
-            String schluessel = baueSchluessel(correlationId, delegateExecution.getCurrentActivityId());
-            DelegateExecutionSerializer.serialisiereAnker(delegateExecution, schluessel, byteBuffer, currentPersistence, new PersistenceFormat());
-            expiringCache.put(schluessel, currentPersistence.getAnkerPackageName());
+            String idempotenceKey = constructIdempotenceKey(correlationId, delegateExecution.getCurrentActivityId());
+            DelegateExecutionSerializer.writeBuoy(delegateExecution, idempotenceKey, byteBuffer, currentPersistence, new PersistenceFormat());
+            expiringCache.put(idempotenceKey, currentPersistence.getAnkerPackageName());
         } finally {
-            synchronized (AnkerManager.class) {
+            synchronized (Idempotence.class) {
                 currentPersistence.unregister();
             }
             byteBuffer.clear();
             byteBufferObjectPool.returnObject(byteBuffer);
-            LOG.error("Anker in {} ns geschrieben für {}", (System.nanoTime() - start), delegateExecution.getCurrentActivityId());
+            LOG.error("Buoy put in {} ns for {}", (System.nanoTime() - start), delegateExecution.getCurrentActivityId());
         }
     }
 
-    public void leseAnkerInProzessVariablen(String correlationId, DelegateExecution delegateExecution)
+    public void readBuoyStateIntoProcessVariables(String correlationId, DelegateExecution delegateExecution)
             throws IOException {
-        String schluessel = baueSchluessel(correlationId, delegateExecution.getCurrentActivityId());
-        String dateiName = expiringCache.get(schluessel);
-        if (dateiName == null) {
-            throw new RuntimeException("Dateiname für Schlüssel nicht gefunden: " + schluessel);
+        String idempotenceKey = constructIdempotenceKey(correlationId, delegateExecution.getCurrentActivityId());
+        String filename = expiringCache.get(idempotenceKey);
+        if (filename == null) {
+            throw new RuntimeException("File not found for idempotenceKey: " + idempotenceKey);
         }
-        if (output.getAnkerPackageName().equals(dateiName)) {
+        if (output.getAnkerPackageName().equals(filename)) {
             rollover();
         }
-        String ankerEintrag = null;
+        String buoy = null;
         // TODO: Datei locken, damit der Abräumer sie nicht gleichzeitig entfernt?
-        try (BufferedReader br = new BufferedReader(new FileReader(dateiName))) {
+        try (BufferedReader br = new BufferedReader(new FileReader(filename))) {
             while (br.ready()) {
-                String zeile = br.readLine();
-                if (zeile.startsWith(schluessel)) {
-                    ankerEintrag = zeile;
+                String line = br.readLine();
+                if (line.startsWith(idempotenceKey)) {
+                    buoy = line;
                     break;
                 }
             }
         }
-        if (ankerEintrag != null) {
-            schreibeProzessVariablen(ankerEintrag, ((ExecutionEntity) delegateExecution));
+        if (buoy != null) {
+            writeSavedStateToProcessVariables(buoy, ((ExecutionEntity) delegateExecution));
         }
     }
 
 
-    private void schreibeProzessVariablen(String ankerEintrag, ExecutionEntity executionEntity) {
+    private void writeSavedStateToProcessVariables(String buoy, ExecutionEntity executionEntity) {
         PersistenceFormat persistenceFormat = new PersistenceFormat();
-        String variablen = ankerEintrag.substring(ankerEintrag.indexOf('{') + 1);
+        //TODO: use Buffer instead of substrings
+        String variablen = buoy.substring(buoy.indexOf('{') + 1);
         variablen = variablen.substring(0, variablen.lastIndexOf('}'));
         ByteBuffer byteBuffer = ByteBuffer.wrap(variablen.getBytes());
         persistenceFormat.readChunk("key", byteBuffer, null);
@@ -182,7 +189,7 @@ abstract class ObjectPool<T> {
     }
 
     public T borrowObject() {
-        T element = null;
+        T element;
         for (int i = 0; i < 10; i++) {
             element = tryGet();
             if (element == null) {

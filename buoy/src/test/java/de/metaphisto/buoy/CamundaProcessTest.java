@@ -1,6 +1,5 @@
 package de.metaphisto.buoy;
 
-import de.metaphisto.buoy.persistence.RedisPersistence;
 import org.camunda.bpm.engine.runtime.ProcessInstanceWithVariables;
 import org.camunda.bpm.engine.test.Deployment;
 import org.camunda.bpm.engine.test.ProcessEngineRule;
@@ -43,8 +42,8 @@ public class CamundaProcessTest {
     @Deployment(resources = {"test1.bpmn"})
     public void testWithCamunda() {
 
-        if(! AnkerManager.isInitialized()) {
-            AnkerManager.initialize("new RedisPersistence()");
+        if(! Idempotence.isInitialized()) {
+            Idempotence.initialize("target/"+"new RedisPersistence()");
         }
 
 

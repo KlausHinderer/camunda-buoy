@@ -27,7 +27,7 @@ public class DelegateExecutionSerializer {
      * @param ziel       der Channel, in den geschrieben wird
      * @throws IOException wenn etwas schiefgeht
      */
-    public static void serialisiereAnker(DelegateExecution execution, String key, ByteBuffer byteBuffer, AbstractPersistenceTechnology ziel, PersistenceFormat persistenceFormat) throws IOException {
+    public static void writeBuoy(DelegateExecution execution, String key, ByteBuffer byteBuffer, AbstractPersistenceTechnology ziel, PersistenceFormat persistenceFormat) throws IOException {
         // Benutzt Locks, weil die Schreiboperationen hintereinander passieren m�ssen
         boolean locked = false;
         try {
@@ -57,7 +57,7 @@ public class DelegateExecutionSerializer {
                 ExecutionEntity parent = ((ExecutionEntity) execution).getParent();
                 if (parent != null) {
                     ziel.appendNext("parent:", key, byteBuffer, locked, ONLY_FLUSH_IF_BUFFER_FULL);
-                    serialisiereAnker(parent, key, byteBuffer, ziel, persistenceFormat);
+                    writeBuoy(parent, key, byteBuffer, ziel, persistenceFormat);
                 }
             }
             locked = ziel.afterLastWriteCommand(byteBuffer, key, locked);

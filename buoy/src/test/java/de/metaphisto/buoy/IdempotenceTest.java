@@ -26,7 +26,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
-public class AnkerManagerTest {
+public class IdempotenceTest {
 
     @Mock
     private ExecutionEntity delegateExecution;
@@ -52,16 +52,18 @@ public class AnkerManagerTest {
     @Mock
     private TypedValueSerializer typedValueSerializer;
 
-    private AnkerManager ankerManager;
+    private Idempotence idempotence;
 
     @BeforeClass
     public static void init() {
-        AnkerManager.initialize("target/anker");
+        if(! Idempotence.isInitialized()) {
+            Idempotence.initialize("target/anker");
+        }
     }
 
     @Before
     public void setUp() {
-        ankerManager = AnkerManager.getInstance();
+        idempotence = Idempotence.getInstance();
         Set<String> prozessVariablen = new HashSet<>();
         prozessVariablen.add("processContainer");
         when(delegateExecution.getVariableNamesLocal()).thenReturn(prozessVariablen);
@@ -73,18 +75,18 @@ public class AnkerManagerTest {
 
     @Test
     public void testSchreibe() throws IOException {
-        ankerManager.schreibeAnker("1", delegateExecution);
-        assertTrue(ankerManager.ankerExists("1", delegateExecution));
+        idempotence.putBuoy("1", delegateExecution);
+        assertTrue(idempotence.entryExists("1", delegateExecution));
     }
 
     @Test
     public void testLese() throws IOException {
         Context.setCommandContext(commandContext);
         Context.setProcessEngineConfiguration(processEngineConfiguration);
-        ankerManager.rollover();
-        ankerManager.schreibeAnker("2", delegateExecution);
-        assertTrue(ankerManager.ankerExists("2", delegateExecution));
-        ankerManager.leseAnkerInProzessVariablen("2", leereDelegateExecution);
+        idempotence.rollover();
+        idempotence.putBuoy("2", delegateExecution);
+        assertTrue(idempotence.entryExists("2", delegateExecution));
+        idempotence.readBuoyStateIntoProcessVariables("2", leereDelegateExecution);
         verify(leereDelegateExecution).setVariableLocal(any(), any(), any());
     }
 }

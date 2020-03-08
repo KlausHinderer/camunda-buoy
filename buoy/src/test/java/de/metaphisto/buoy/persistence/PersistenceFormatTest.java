@@ -20,7 +20,7 @@ public class PersistenceFormatTest {
     public void testWriteThenRead() throws IOException {
         PersistenceFormat persistenceFormat = new PersistenceFormat();
         ByteBuffer byteBuffer = ByteBuffer.allocateDirect(256);
-        persistenceFormat.writeVariable(VARIABLE_NAME, VARIABLE_TYPE, VARIABLE_VALUE, "key", byteBuffer, new LogFilePersistence("as"), true);
+        persistenceFormat.writeVariable(VARIABLE_NAME, VARIABLE_TYPE, VARIABLE_VALUE, "key", byteBuffer, new LogFilePersistence("target/as"), true);
         byteBuffer.flip();
         persistenceFormat.readChunk("key", byteBuffer, null);
         assertEquals(VARIABLE_NAME, persistenceFormat.readValues.get(0));

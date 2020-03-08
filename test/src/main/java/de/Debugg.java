@@ -1,7 +1,7 @@
 package de;
 
 import de.metaphisto.CamundaTest;
-import de.metaphisto.buoy.AnkerManager;
+import de.metaphisto.buoy.Idempotence;
 import org.camunda.bpm.engine.impl.bpmn.helper.BpmnProperties;
 import org.camunda.bpm.engine.impl.cfg.*;
 import org.camunda.bpm.engine.impl.context.Context;
@@ -93,18 +93,18 @@ public class Debugg {
     }
 
     public static void main(String[] args) throws IOException {
-        AnkerManager.initialize("test/target/ankerDebugg");
+        Idempotence.initialize("test/target/ankerDebugg");
         CamundaTest camundaTest = new CamundaTest();
         camundaTest.actor1(new StringResult2());
 
-        AnkerManager ankerManager = AnkerManager.getInstance();
+        Idempotence idempotence = Idempotence.getInstance();
 
         ExecutionEntity delegateExecution = getDelegateExecution();
         String wert = "abcdefg" + System.currentTimeMillis();
         TypedValue typedValue = new PrimitiveTypeValueImpl.StringValueImpl(wert);
         delegateExecution.getParent().setVariableLocal("var", typedValue, delegateExecution.getParent());
-        ankerManager.schreibeAnker(1 + "", delegateExecution);
-        ankerManager.leseAnkerInProzessVariablen(1 + "", getDelegateExecution());
+        idempotence.putBuoy(1 + "", delegateExecution);
+        idempotence.readBuoyStateIntoProcessVariables(1 + "", getDelegateExecution());
     }
 
     static class ProcessEngineConfig extends ProcessEngineConfigurationImpl {
