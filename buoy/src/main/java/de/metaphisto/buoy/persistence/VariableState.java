@@ -55,17 +55,24 @@ class StartScopeOrVariableState extends VariableState {
 
     private static final StartScopeOrVariableState INSTANCE = new StartScopeOrVariableState();
     public static final byte START_VARIABLE = "V".getBytes()[0];
+    public static final byte TERMINATOR = "}".getBytes()[0];
     private VariableState nextState = null;
+    private boolean terminator = false;
 
     private StartScopeOrVariableState(){}
 
     public static StartScopeOrVariableState getInstance(){
         INSTANCE.nextState = null;
+        INSTANCE.terminator = false;
         return INSTANCE;
     }
 
     public boolean isStartScope(){
         return ! (nextState instanceof VariableNameState);
+    }
+
+    public boolean isTerminator(){
+        return terminator;
     }
 
     @Override
@@ -75,7 +82,10 @@ class StartScopeOrVariableState extends VariableState {
             if(START_VARIABLE == b) {
                 nextState = VariableNameState.getInstance();
                 return true;
-            }else {
+            } else if(TERMINATOR == b){
+              terminator = true;
+              return true;
+            } else {
 
                 return true;
             }

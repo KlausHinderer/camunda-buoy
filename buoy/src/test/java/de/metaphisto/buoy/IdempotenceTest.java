@@ -52,18 +52,18 @@ public class IdempotenceTest {
     @Mock
     private TypedValueSerializer typedValueSerializer;
 
-    private Idempotence idempotence;
+    private IdempotenceWithLogfile idempotence;
 
     @BeforeClass
     public static void init() {
-        if(! Idempotence.isInitialized()) {
-            Idempotence.initialize("target/anker");
+        if(! IdempotenceWithLogfile.isInitialized()) {
+            IdempotenceWithLogfile.initialize("target/anker");
         }
     }
 
     @Before
     public void setUp() {
-        idempotence = Idempotence.getInstance();
+        idempotence = IdempotenceWithLogfile.getInstance();
         Set<String> prozessVariablen = new HashSet<>();
         prozessVariablen.add("processContainer");
         when(delegateExecution.getVariableNamesLocal()).thenReturn(prozessVariablen);

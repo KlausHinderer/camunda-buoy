@@ -1,11 +1,11 @@
 package de;
 
-import de.metaphisto.buoy.Idempotence;
+import de.metaphisto.buoy.IdempotenceWithLogfile;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.camunda.bpm.engine.delegate.JavaDelegate;
 
 public class ProcessDelegate implements JavaDelegate {
-    private static Idempotence idempotence = Idempotence.getInstance();
+    private static IdempotenceWithLogfile idempotence = IdempotenceWithLogfile.getInstance();
 
     @Override
     public void execute(DelegateExecution execution) throws Exception {

@@ -30,7 +30,7 @@
  */
 package de.metaphisto;
 
-import de.metaphisto.buoy.Idempotence;
+import de.metaphisto.buoy.IdempotenceWithLogfile;
 import org.camunda.bpm.engine.impl.bpmn.helper.BpmnProperties;
 import org.camunda.bpm.engine.impl.cfg.*;
 import org.camunda.bpm.engine.impl.context.Context;
@@ -64,7 +64,7 @@ import java.util.List;
 public class ConcurrencyTest {
 
     public static final String ACTIVITY = "Activity";
-    private static Idempotence idempotence;
+    private static IdempotenceWithLogfile idempotence;
     private static TransactionContextFactory transactionContextFactory = new TransactionContextFactory() {
         @Override
         public TransactionContext openTransactionContext(CommandContext commandContext) {
@@ -106,11 +106,11 @@ public class ConcurrencyTest {
 
     static {
         try {
-            Idempotence.initialize("target/anker");
+            IdempotenceWithLogfile.initialize("target/anker");
         } catch (RuntimeException ex) {
             //ignore already-initialized exceptions
         }
-        idempotence = Idempotence.getInstance();
+        idempotence = IdempotenceWithLogfile.getInstance();
     }
 
     private String id1, id2;

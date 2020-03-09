@@ -1,7 +1,7 @@
 package de;
 
 import de.metaphisto.CamundaTest;
-import de.metaphisto.buoy.Idempotence;
+import de.metaphisto.buoy.IdempotenceWithLogfile;
 import org.camunda.bpm.engine.impl.bpmn.helper.BpmnProperties;
 import org.camunda.bpm.engine.impl.cfg.*;
 import org.camunda.bpm.engine.impl.context.Context;
@@ -93,11 +93,11 @@ public class Debugg {
     }
 
     public static void main(String[] args) throws IOException {
-        Idempotence.initialize("test/target/ankerDebugg");
+        IdempotenceWithLogfile.initialize("test/target/ankerDebugg");
         CamundaTest camundaTest = new CamundaTest();
         camundaTest.actor1(new StringResult2());
 
-        Idempotence idempotence = Idempotence.getInstance();
+        IdempotenceWithLogfile idempotence = IdempotenceWithLogfile.getInstance();
 
         ExecutionEntity delegateExecution = getDelegateExecution();
         String wert = "abcdefg" + System.currentTimeMillis();

@@ -37,15 +37,6 @@ public class LogFilePersistence extends AbstractPersistenceTechnology<FileChanne
         storeHolder.setRolloverHint();
     }
 
-
-    public void register() {
-        storeHolder.register();
-    }
-
-    public void unregister() {
-        storeHolder.unregister();
-    }
-
     public String getAnkerPackageName() {
         return storeHolder.getAnkerPackageName();
     }

@@ -1,6 +1,11 @@
 package de.metaphisto.buoy.persistence;
 
 import org.camunda.bpm.engine.delegate.DelegateExecution;
+import org.camunda.bpm.engine.impl.persistence.entity.ExecutionEntity;
+import org.camunda.bpm.engine.variable.impl.value.NullValueImpl;
+import org.camunda.bpm.engine.variable.impl.value.ObjectValueImpl;
+import org.camunda.bpm.engine.variable.impl.value.PrimitiveTypeValueImpl;
+import org.camunda.bpm.engine.variable.value.TypedValue;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -51,18 +56,44 @@ public class PersistenceFormat {
         }
         do {
             boolean stateComplete = variableState.consume(byteBuffer);
-            if(variableState instanceof StartScopeOrVariableState) {
-                if(((StartScopeOrVariableState)variableState).isStartScope()) {
+            if (variableState instanceof StartScopeOrVariableState) {
+                if (((StartScopeOrVariableState) variableState).isTerminator()) {
+                    return;
+                }
+                if (((StartScopeOrVariableState) variableState).isStartScope()) {
                     delegateExecution = delegateExecution.getSuperExecution();
                 }
             }
             if (stateComplete) {
                 //transition to next state
-                if(variableState.hasOutput()) {
-                    readValues.add(variableState.getValue());
+                if (variableState.hasOutput()) {
+                    if(variableState instanceof ReadVariableValue) {
+                        writeSavedStateToProcessVariables(readValues.get(0),readValues.get(1), variableState.getValue(), (ExecutionEntity) delegateExecution);
+                        readValues.clear();
+                    }else {
+                        readValues.add(variableState.getValue());
+                    }
                 }
                 variableState = variableState.nextState();
             }
         } while (byteBuffer.hasRemaining());
+    }
+
+    private void writeSavedStateToProcessVariables(String name, String type, String value, ExecutionEntity executionEntity) {
+        TypedValue typedValue;
+        switch (type) {
+            case "NullValueImpl":
+                typedValue = NullValueImpl.INSTANCE;
+                break;
+            case "string":
+                typedValue = new PrimitiveTypeValueImpl.StringValueImpl(value);
+                break;
+            case "long":
+                typedValue = new PrimitiveTypeValueImpl.LongValueImpl(Long.valueOf(value));
+                break;
+            default:
+                typedValue = new ObjectValueImpl(null, value, "application/x-java-serialized-object", type, false);
+        }
+        executionEntity.setVariableLocal(name, typedValue, executionEntity);
     }
 }

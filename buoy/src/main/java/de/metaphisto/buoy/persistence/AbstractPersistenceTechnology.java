@@ -132,4 +132,12 @@ public abstract class AbstractPersistenceTechnology<T extends WritableByteChanne
      * @return the number of remaining bytes for the key or -1 if the end has been reached
      */
     public abstract int readNext(ReadAction readAction, ByteBuffer byteBuffer) throws IOException;
+
+    public void register() {
+        storeHolder.register();
+    }
+
+    public void unregister() {
+        storeHolder.unregister();
+    }
 }

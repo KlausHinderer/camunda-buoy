@@ -1,5 +1,7 @@
 package de.metaphisto.buoy;
 
+import de.metaphisto.buoy.delegate.FirstDelegate;
+import de.metaphisto.buoy.persistence.RedisPersistence;
 import org.camunda.bpm.engine.runtime.ProcessInstanceWithVariables;
 import org.camunda.bpm.engine.test.Deployment;
 import org.camunda.bpm.engine.test.ProcessEngineRule;
@@ -41,27 +43,33 @@ public class CamundaProcessTest {
     @Test
     @Deployment(resources = {"test1.bpmn"})
     public void testWithCamunda() {
+        for (int i = 0; i < 100; i++) {
 
-        if(! Idempotence.isInitialized()) {
-            Idempotence.initialize("target/"+"new RedisPersistence()");
+
+            FirstDelegate.setDeprecatedMode(false);
+            RedisPersistence redisPersistence = new RedisPersistence();
+
+            if (!Idempotence.isInitialized()) {
+                Idempotence.initialize(redisPersistence);
+            }
+
+
+            Map<String, Object> processVariables = new HashMap<>();
+            processVariables.put("ID", "123"+i);
+            processEngineRule.getRuntimeService().createProcessInstanceByKey("Process_buoy1").setVariables(processVariables).executeWithVariablesInReturn();
+
+
+            // check if process instance ended
+            assertNull(processEngineRule.getRuntimeService().createProcessInstanceQuery().singleResult());
+
+            //Restart Process to test idempotence
+            ProcessInstanceWithVariables restarted = processEngineRule.getRuntimeService().createProcessInstanceByKey("Process_buoy1").setVariables(processVariables).executeWithVariablesInReturn();
+
+            // check if process instance ended
+            assertNull(processEngineRule.getRuntimeService().createProcessInstanceQuery().singleResult());
+
+            Object written = restarted.getVariables().get("written");
+            assertNotNull(written);
         }
-
-
-        Map<String, Object> processVariables = new HashMap<>();
-        processVariables.put("ID","123");
-        processEngineRule.getRuntimeService().createProcessInstanceByKey("Process_buoy1").setVariables(processVariables).executeWithVariablesInReturn();
-
-
-        // check if process instance ended
-        assertNull(processEngineRule.getRuntimeService().createProcessInstanceQuery().singleResult());
-
-        //Restart Process to test idempotence
-        ProcessInstanceWithVariables restarted = processEngineRule.getRuntimeService().createProcessInstanceByKey("Process_buoy1").setVariables(processVariables).executeWithVariablesInReturn();
-
-        // check if process instance ended
-        assertNull(processEngineRule.getRuntimeService().createProcessInstanceQuery().singleResult());
-
-        Object written = restarted.getVariables().get("written");
-        assertNotNull(written);
     }
 }
