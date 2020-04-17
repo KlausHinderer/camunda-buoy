@@ -1,5 +1,6 @@
 package de.metaphisto.buoy;
 
+import de.metaphisto.buoy.persistence.AbstractPersistenceTechnology;
 import de.metaphisto.buoy.persistence.LogFilePersistence;
 import de.metaphisto.buoy.persistence.PersistenceFormat;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
@@ -8,8 +9,6 @@ import org.camunda.bpm.engine.variable.impl.value.NullValueImpl;
 import org.camunda.bpm.engine.variable.impl.value.ObjectValueImpl;
 import org.camunda.bpm.engine.variable.impl.value.PrimitiveTypeValueImpl;
 import org.camunda.bpm.engine.variable.value.TypedValue;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -19,17 +18,13 @@ import java.util.Stack;
 import java.util.concurrent.locks.LockSupport;
 
 /**
- * Use Idempotence instead
+ * Use Idempotence instead, or make this class use PersistenceFormat etc.
  */
 @Deprecated
-public class IdempotenceWithLogfile {
+public class IdempotenceWithLogfile extends AbstractIdempotence {
 
-    private static final Logger LOG = LoggerFactory.getLogger(IdempotenceWithLogfile.class);
     private static IdempotenceWithLogfile instance = null;
     private final String filePrefix;
-    private LogFilePersistence output;
-    private ByteBufferObjectPool byteBufferObjectPool = new ByteBufferObjectPool(10);
-    private ExpiringCache expiringCache = new ExpiringCache(60 * 60 * 1000);
 
     private IdempotenceWithLogfile(String filePrefix) {
         this.filePrefix = filePrefix;
@@ -68,51 +63,18 @@ public class IdempotenceWithLogfile {
                 getFilename());
         synchronized (this) {
             // Swap instances, current instance can have pending accesses.
-            output.setRolloverHint();
+            ((LogFilePersistence) output).setRolloverHint();
             output = rolledOverPersistence;
         }
     }
 
-    public boolean entryExists(String correlationId, DelegateExecution delegateExecution) {
-        boolean returnValue = false;
-        String prozessSchrittId = delegateExecution.getCurrentActivityId();
-        //TODO: Move into persistenceTechnology, this has to be cluster-wide
-        if (expiringCache.get(constructIdempotenceKey(correlationId, prozessSchrittId)) != null) {
-            returnValue = true;
-        }
-        return returnValue;
-    }
-
-    private String constructIdempotenceKey(String correlationId, String processStepId) {
+    protected String constructIdempotenceKey(String correlationId, String processStepId) {
         return String.join("_", correlationId, processStepId);
     }
 
-    /**
-     * Puts out a buoy to mark the course a processinstance has taken
-     * @param correlationId the correlationId
-     * @param delegateExecution the delegateExecution the current step
-     * @throws IOException
-     */
-    public void putBuoy(String correlationId, DelegateExecution delegateExecution) throws IOException {
-        long start = System.nanoTime();
-        ByteBuffer byteBuffer = byteBufferObjectPool.borrowObject();
-        LogFilePersistence currentPersistence = output;
-        synchronized (IdempotenceWithLogfile.class) {
-            // verhindern, dass ein Rollover/Schließen des FileChannels stattfindet während des register
-            currentPersistence.register();
-        }
-        try {
-            String idempotenceKey = constructIdempotenceKey(correlationId, delegateExecution.getCurrentActivityId());
-            DelegateExecutionSerializer.writeBuoy(delegateExecution, idempotenceKey, byteBuffer, currentPersistence, new PersistenceFormat());
-            expiringCache.put(idempotenceKey, currentPersistence.getAnkerPackageName());
-        } finally {
-            synchronized (IdempotenceWithLogfile.class) {
-                currentPersistence.unregister();
-            }
-            byteBuffer.clear();
-            byteBufferObjectPool.returnObject(byteBuffer);
-            LOG.error("Buoy put in {} ns for {}", (System.nanoTime() - start), delegateExecution.getCurrentActivityId());
-        }
+    @Override
+    protected void putCacheEntry(String idempotenceKey, AbstractPersistenceTechnology currentPersistence) {
+        expiringCache.put(idempotenceKey, ((LogFilePersistence) currentPersistence).getAnkerPackageName());
     }
 
     public void readBuoyStateIntoProcessVariables(String correlationId, DelegateExecution delegateExecution)
@@ -122,7 +84,7 @@ public class IdempotenceWithLogfile {
         if (filename == null) {
             throw new RuntimeException("File not found for idempotenceKey: " + idempotenceKey);
         }
-        if (output.getAnkerPackageName().equals(filename)) {
+        if (((LogFilePersistence) output).getAnkerPackageName().equals(filename)) {
             rollover();
         }
         String buoy = null;
@@ -149,10 +111,10 @@ public class IdempotenceWithLogfile {
         variablen = variablen.substring(0, variablen.lastIndexOf('}'));
         ByteBuffer byteBuffer = ByteBuffer.wrap(variablen.getBytes());
         persistenceFormat.readChunk("key", byteBuffer, executionEntity);
-        for (int i = 0; i+2 < persistenceFormat.readValues.size() ; i+=3) {
+        for (int i = 0; i + 2 < persistenceFormat.readValues.size(); i += 3) {
             String name = persistenceFormat.readValues.get(i);
-            String type = persistenceFormat.readValues.get(i+1);
-            String wert = persistenceFormat.readValues.get(i+2);
+            String type = persistenceFormat.readValues.get(i + 1);
+            String wert = persistenceFormat.readValues.get(i + 2);
             TypedValue typedValue;
             switch (type) {
                 case "NullValueImpl":
