@@ -74,6 +74,7 @@ public abstract class AbstractIdempotence {
         if (readAction.isLocked()) {
             output.unlock();
         }
+        byteBuffer.clear();
         byteBufferObjectPool.returnObject(byteBuffer);
     }
 }
