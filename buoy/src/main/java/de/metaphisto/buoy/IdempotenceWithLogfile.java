@@ -2,6 +2,7 @@ package de.metaphisto.buoy;
 
 import de.metaphisto.buoy.persistence.AbstractPersistenceTechnology;
 import de.metaphisto.buoy.persistence.LogFilePersistence;
+import org.camunda.bpm.engine.delegate.DelegateExecution;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -46,7 +47,13 @@ public class IdempotenceWithLogfile extends AbstractIdempotence {
     }
 
     protected String getFilename() {
-        return filePrefix + System.currentTimeMillis() + "_anker.out";
+        return filePrefix + System.currentTimeMillis() + System.nanoTime() + "_anker.out";
+    }
+
+    @Override
+    public void readBuoyStateIntoProcessVariables(String correlationId, DelegateExecution delegateExecution) throws IOException {
+        rollover();
+        super.readBuoyStateIntoProcessVariables(correlationId, delegateExecution);
     }
 
     protected void rollover() throws IOException {

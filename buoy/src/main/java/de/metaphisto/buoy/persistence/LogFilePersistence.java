@@ -40,7 +40,7 @@ public class LogFilePersistence extends AbstractPersistenceTechnology<FileChanne
             throw new RuntimeException("File not found for idempotenceKey: " + key);
         }
         if (this.getAnkerPackageName().equals(filename)) {
-            setRolloverHint();
+            throw new RuntimeException("File is in use to store persistence information, thus cannot be opened for read access");
         }
         String buoy = null;
         try (BufferedReader br = new BufferedReader(new FileReader(filename))) {

@@ -10,7 +10,7 @@ public class FileChannelHolder extends AbstractStoreHolder<FileChannel> {
 
     public FileChannelHolder(String filename) throws IOException {
         super(filename);
-        this.fileChannel = FileChannel.open(Paths.get(filename), StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+        this.fileChannel = FileChannel.open(Paths.get(filename), StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
     }
 
 
