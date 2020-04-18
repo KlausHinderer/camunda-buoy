@@ -14,7 +14,6 @@ import java.nio.ByteBuffer;
 public class Idempotence extends AbstractIdempotence {
 
     private static Idempotence instance = null;
-    private ByteBufferObjectPool byteBufferObjectPool = new ByteBufferObjectPool(10);
 
     private Idempotence(AbstractPersistenceTechnology abstractPersistenceTechnology) {
         output = abstractPersistenceTechnology;

@@ -9,10 +9,6 @@ import java.nio.ByteBuffer;
 import java.util.Stack;
 import java.util.concurrent.locks.LockSupport;
 
-/**
- * Use Idempotence instead, or make this class use PersistenceFormat etc.
- */
-@Deprecated
 public class IdempotenceWithLogfile extends AbstractIdempotence {
 
     private static IdempotenceWithLogfile instance = null;
@@ -77,13 +73,20 @@ public class IdempotenceWithLogfile extends AbstractIdempotence {
 
 }
 
+//TODO: move this to AbstractIdempotence or a top-level file
 class ByteBufferObjectPool extends ObjectPool<ByteBuffer> {
-    protected ByteBufferObjectPool(int maxSize) {
+    private int bufferSize;
+
+    protected ByteBufferObjectPool(int maxSize, int bufferSize) {
         super(maxSize);
+        if(bufferSize<512) {
+            throw new RuntimeException("Buffersize '"+bufferSize+"' is too small, use at least 512");
+        }
+        this.bufferSize = bufferSize;
     }
 
     protected ByteBuffer createObject() {
-        return ByteBuffer.allocateDirect(65536);
+        return ByteBuffer.allocateDirect(bufferSize);
     }
 
 }

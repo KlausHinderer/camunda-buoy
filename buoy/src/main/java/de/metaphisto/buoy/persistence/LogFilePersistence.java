@@ -53,6 +53,7 @@ public class LogFilePersistence extends AbstractPersistenceTechnology<FileChanne
             }
         }
 
+        System.out.println(filename+" "+buoy);
         //remove the key and starting '{'  and closing '}' from the line
         buoy = buoy.substring(key.length() + 1, buoy.length() - 1);
 

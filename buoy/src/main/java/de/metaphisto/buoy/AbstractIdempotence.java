@@ -15,7 +15,7 @@ import java.nio.ByteBuffer;
  */
 public abstract class AbstractIdempotence {
     private final Logger LOG = LoggerFactory.getLogger(getClass());
-    private ByteBufferObjectPool byteBufferObjectPool = new ByteBufferObjectPool(10);
+    private ByteBufferObjectPool byteBufferObjectPool = new ByteBufferObjectPool(10, 32768);
     protected AbstractPersistenceTechnology output;
     protected ExpiringCache expiringCache = new ExpiringCache(60 * 60 * 1000);
 
