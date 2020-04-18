@@ -64,9 +64,9 @@ public class IdempotenceTest {
     @Before
     public void setUp() {
         idempotence = IdempotenceWithLogfile.getInstance();
-        Set<String> prozessVariablen = new HashSet<>();
-        prozessVariablen.add("processContainer");
-        when(delegateExecution.getVariableNamesLocal()).thenReturn(prozessVariablen);
+        Set<String> processVariables = new HashSet<>();
+        processVariables.add("processContainer");
+        when(delegateExecution.getVariableNamesLocal()).thenReturn(processVariables);
         when(delegateExecution.getVariableInstance(eq("processContainer"))).thenReturn(coreVariableInstance);
         when(coreVariableInstance.getTypedValue(eq(false))).thenReturn(processContainerObject);
         when(processContainerObject.getValueSerialized()).thenReturn("asv");
@@ -75,14 +75,15 @@ public class IdempotenceTest {
 
     @Test
     public void testWrite() throws IOException {
+        String correlationId = "IdempotenceTest.testWrite1";
         idempotence.rollover();
-        idempotence.putBuoy("1", delegateExecution);
-        assertTrue(idempotence.entryExists("1", delegateExecution));
+        idempotence.putBuoy(correlationId, delegateExecution);
+        assertTrue(idempotence.entryExists(correlationId, delegateExecution));
     }
 
     @Test
     public void testRead() throws IOException {
-        String correlationId = "testRead2" + System.nanoTime();
+        String correlationId = "IdempotenceTest.testRead2" + System.nanoTime();
         Context.setCommandContext(commandContext);
         Context.setProcessEngineConfiguration(processEngineConfiguration);
         idempotence.rollover();

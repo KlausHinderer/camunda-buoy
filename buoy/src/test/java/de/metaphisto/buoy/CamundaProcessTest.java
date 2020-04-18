@@ -43,21 +43,17 @@ public class CamundaProcessTest {
     @Test
     @Deployment(resources = {"test1.bpmn"})
     public void testWithCamunda() {
+        FirstDelegate.setDeprecatedMode(false);
+        RedisPersistence redisPersistence = new RedisPersistence();
+
+        if (!Idempotence.isInitialized()) {
+            Idempotence.initialize(redisPersistence);
+        }
         for (int i = 0; i < 100; i++) {
-
-
-            FirstDelegate.setDeprecatedMode(false);
-            RedisPersistence redisPersistence = new RedisPersistence();
-
-            if (!Idempotence.isInitialized()) {
-                Idempotence.initialize(redisPersistence);
-            }
-
 
             Map<String, Object> processVariables = new HashMap<>();
             processVariables.put("ID", "123"+i);
             processEngineRule.getRuntimeService().createProcessInstanceByKey("Process_buoy1").setVariables(processVariables).executeWithVariablesInReturn();
-
 
             // check if process instance ended
             assertNull(processEngineRule.getRuntimeService().createProcessInstanceQuery().singleResult());
