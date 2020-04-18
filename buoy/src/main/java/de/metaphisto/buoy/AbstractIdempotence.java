@@ -2,6 +2,7 @@ package de.metaphisto.buoy;
 
 import de.metaphisto.buoy.persistence.AbstractPersistenceTechnology;
 import de.metaphisto.buoy.persistence.PersistenceFormat;
+import de.metaphisto.buoy.persistence.ReadAction;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,6 +61,19 @@ public abstract class AbstractIdempotence {
 
     protected abstract void putCacheEntry(String idempotenceKey, AbstractPersistenceTechnology currentPersistence);
 
-    public abstract void readBuoyStateIntoProcessVariables(String correlationId, DelegateExecution delegateExecution)
-            throws IOException;
+    public void readBuoyStateIntoProcessVariables(String correlationId, DelegateExecution delegateExecution)
+            throws IOException {
+        String idempotenceKey = constructIdempotenceKey(correlationId, delegateExecution.getCurrentActivityId());
+        ByteBuffer byteBuffer = byteBufferObjectPool.borrowObject();
+        ReadAction readAction = output.prepareForRead(idempotenceKey, false, byteBuffer);
+        PersistenceFormat persistenceFormat = new PersistenceFormat();
+        do {
+            persistenceFormat.readChunk(idempotenceKey, byteBuffer, delegateExecution);
+        } while (output.readNext(readAction, byteBuffer) >= 0);
+
+        if (readAction.isLocked()) {
+            output.unlock();
+        }
+        byteBufferObjectPool.returnObject(byteBuffer);
+    }
 }

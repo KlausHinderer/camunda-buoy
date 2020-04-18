@@ -9,7 +9,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 /**
- *
+ * This is the class a ServiceTask can use to implement its idempotence.
  */
 public class Idempotence extends AbstractIdempotence {
 
@@ -47,22 +47,5 @@ public class Idempotence extends AbstractIdempotence {
     @Override
     protected void putCacheEntry(String idempotenceKey, AbstractPersistenceTechnology currentPersistence) {
         expiringCache.put(idempotenceKey, "Buoy");
-    }
-
-    @Override
-    public void readBuoyStateIntoProcessVariables(String correlationId, DelegateExecution delegateExecution)
-            throws IOException {
-        String idempotenceKey = constructIdempotenceKey(correlationId, delegateExecution.getCurrentActivityId());
-        ByteBuffer byteBuffer = byteBufferObjectPool.borrowObject();
-        ReadAction readAction = output.prepareForRead(idempotenceKey, false, byteBuffer);
-        PersistenceFormat persistenceFormat = new PersistenceFormat();
-        do {
-            persistenceFormat.readChunk(idempotenceKey, byteBuffer, delegateExecution);
-        } while (output.readNext(readAction, byteBuffer) >= 0);
-
-        if (readAction.isLocked()) {
-            output.unlock();
-        }
-        byteBufferObjectPool.returnObject(byteBuffer);
     }
 }

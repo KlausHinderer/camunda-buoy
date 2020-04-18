@@ -56,7 +56,7 @@ public class IdempotenceTest {
 
     @BeforeClass
     public static void init() {
-        if(! IdempotenceWithLogfile.isInitialized()) {
+        if (!IdempotenceWithLogfile.isInitialized()) {
             IdempotenceWithLogfile.initialize("target/anker");
         }
     }
@@ -70,23 +70,25 @@ public class IdempotenceTest {
         when(delegateExecution.getVariableInstance(eq("processContainer"))).thenReturn(coreVariableInstance);
         when(coreVariableInstance.getTypedValue(eq(false))).thenReturn(processContainerObject);
         when(processContainerObject.getValueSerialized()).thenReturn("asv");
-        when(processContainerObject.getObjectTypeName()).thenReturn("de.schufa.ProcessContainer");
+        when(processContainerObject.getObjectTypeName()).thenReturn("de.metaphisto.ProcessContainer");
     }
 
     @Test
-    public void testSchreibe() throws IOException {
+    public void testWrite() throws IOException {
+        idempotence.rollover();
         idempotence.putBuoy("1", delegateExecution);
         assertTrue(idempotence.entryExists("1", delegateExecution));
     }
 
     @Test
-    public void testLese() throws IOException {
+    public void testRead() throws IOException {
+        String correlationId = "testRead2" + System.nanoTime();
         Context.setCommandContext(commandContext);
         Context.setProcessEngineConfiguration(processEngineConfiguration);
         idempotence.rollover();
-        idempotence.putBuoy("2", delegateExecution);
-        assertTrue(idempotence.entryExists("2", delegateExecution));
-        idempotence.readBuoyStateIntoProcessVariables("2", leereDelegateExecution);
+        idempotence.putBuoy(correlationId, delegateExecution);
+        assertTrue(idempotence.entryExists(correlationId, delegateExecution));
+        idempotence.readBuoyStateIntoProcessVariables(correlationId, leereDelegateExecution);
         verify(leereDelegateExecution).setVariableLocal(any(), any(), any());
     }
 }
