@@ -31,12 +31,12 @@ public class CamundaProcessLogfileTest {
     public void testWithCamunda() {
         FirstDelegate.setDeprecatedMode(true);
         if(! IdempotenceWithLogfile.isInitialized()) {
-            IdempotenceWithLogfile.initialize("target/"+"new RedisPersistence()");
+            IdempotenceWithLogfile.initialize("target/testWithCamunda");
         }
 
 
         Map<String, Object> processVariables = new HashMap<>();
-        processVariables.put("ID","123");
+        processVariables.put("ID","123"+System.nanoTime());
         processEngineRule.getRuntimeService().createProcessInstanceByKey("Process_buoy1").setVariables(processVariables).executeWithVariablesInReturn();
 
 
