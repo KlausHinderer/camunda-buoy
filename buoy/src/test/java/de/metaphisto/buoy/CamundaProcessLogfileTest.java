@@ -28,10 +28,12 @@ public class CamundaProcessLogfileTest {
 
     @Test
     @Deployment(resources = {"test1.bpmn"})
-    public void testWithCamunda() {
+    public void testWithCamunda() throws IOException {
         FirstDelegate.setDeprecatedMode(true);
         if(! IdempotenceWithLogfile.isInitialized()) {
             IdempotenceWithLogfile.initialize("target/testWithCamunda");
+        }else {
+            IdempotenceWithLogfile.getInstance().rollover();
         }
 
 

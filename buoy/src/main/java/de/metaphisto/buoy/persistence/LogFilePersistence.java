@@ -46,7 +46,6 @@ public class LogFilePersistence extends AbstractPersistenceTechnology<FileChanne
         try (BufferedReader br = new BufferedReader(new FileReader(filename))) {
             while (br.ready()) {
                 String line = br.readLine();
-                System.out.println(line);
                 if (line.startsWith(key)) {
                     buoy = line;
                     break;
@@ -54,7 +53,6 @@ public class LogFilePersistence extends AbstractPersistenceTechnology<FileChanne
             }
         }
 
-        System.out.println(filename+" "+buoy+" "+key);
         //remove the key and starting '{'  and closing '}' from the line
         buoy = buoy.substring(key.length() + 1, buoy.length() - 1);
 
