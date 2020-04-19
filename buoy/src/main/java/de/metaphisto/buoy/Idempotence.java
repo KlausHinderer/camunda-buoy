@@ -1,12 +1,6 @@
 package de.metaphisto.buoy;
 
 import de.metaphisto.buoy.persistence.AbstractPersistenceTechnology;
-import de.metaphisto.buoy.persistence.PersistenceFormat;
-import de.metaphisto.buoy.persistence.ReadAction;
-import org.camunda.bpm.engine.delegate.DelegateExecution;
-
-import java.io.IOException;
-import java.nio.ByteBuffer;
 
 /**
  * This is the class a ServiceTask can use to implement its idempotence.
@@ -16,7 +10,7 @@ public class Idempotence extends AbstractIdempotence {
     private static Idempotence instance = null;
 
     private Idempotence(AbstractPersistenceTechnology abstractPersistenceTechnology) {
-        output = abstractPersistenceTechnology;
+        persistenceTechnology = abstractPersistenceTechnology;
     }
 
     public static synchronized void initialize(AbstractPersistenceTechnology abstractPersistenceTechnology) {
@@ -41,10 +35,5 @@ public class Idempotence extends AbstractIdempotence {
     @Override
     protected String constructIdempotenceKey(String correlationId, String processStepId) {
         return String.join("_", correlationId, processStepId);
-    }
-
-    @Override
-    protected void putCacheEntry(String idempotenceKey, AbstractPersistenceTechnology currentPersistence) {
-        expiringCache.put(idempotenceKey, "Buoy");
     }
 }

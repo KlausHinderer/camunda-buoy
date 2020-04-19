@@ -20,6 +20,15 @@ public class LogFilePersistence extends AbstractPersistenceTechnology<FileChanne
     }
 
     @Override
+    public boolean entryExists(String key, ByteBuffer byteBuffer) {
+        boolean returnValue = false;
+        if (expiringCache.get(key) != null) {
+            returnValue = true;
+        }
+        return returnValue;
+    }
+
+    @Override
     public boolean beforeFirstWriteCommand(ByteBuffer byteBuffer, String key, boolean locked) throws IOException {
         locked = AbstractStoreHolder.schreibeString(key + "{", byteBuffer, storeHolder, locked, AbstractStoreHolder.WriteMode.ONLY_FLUSH_IF_BUFFER_FULL);
         return locked;
@@ -80,6 +89,10 @@ public class LogFilePersistence extends AbstractPersistenceTechnology<FileChanne
 
     public void setRolloverHint() {
         storeHolder.setRolloverHint();
+    }
+
+    public void putCacheEntry(String idempotenceKey) {
+        expiringCache.put(idempotenceKey, getAnkerPackageName());
     }
 
     public String getAnkerPackageName() {

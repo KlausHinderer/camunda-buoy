@@ -15,18 +15,19 @@ import java.nio.ByteBuffer;
  */
 public abstract class AbstractIdempotence {
     private final Logger LOG = LoggerFactory.getLogger(getClass());
-    private ByteBufferObjectPool byteBufferObjectPool = new ByteBufferObjectPool(10, 32768);
-    protected AbstractPersistenceTechnology output;
-    protected ExpiringCache expiringCache = new ExpiringCache(60 * 60 * 1000);
+    private ByteBufferObjectPool byteBufferObjectPool = new ByteBufferObjectPool(10, 8192);
+    protected AbstractPersistenceTechnology persistenceTechnology;
 
     public boolean entryExists(String correlationId, DelegateExecution delegateExecution) {
-        boolean returnValue = false;
-        String prozessSchrittId = delegateExecution.getCurrentActivityId();
-        //TODO: Move into persistenceTechnology, this has to be cluster-wide
-        if (expiringCache.get(constructIdempotenceKey(correlationId, prozessSchrittId)) != null) {
-            returnValue = true;
+        String processStepId = delegateExecution.getCurrentActivityId();
+        String key = constructIdempotenceKey(correlationId, processStepId);
+        ByteBuffer byteBuffer = byteBufferObjectPool.borrowObject();
+        try {
+            return persistenceTechnology.entryExists(key, byteBuffer);
+        }finally {
+            byteBuffer.clear();
+            byteBufferObjectPool.returnObject(byteBuffer);
         }
-        return returnValue;
     }
 
     protected abstract String constructIdempotenceKey(String correlationId, String processStepId);
@@ -41,14 +42,14 @@ public abstract class AbstractIdempotence {
     public void putBuoy(String correlationId, DelegateExecution delegateExecution) throws IOException {
         long start = System.nanoTime();
         ByteBuffer byteBuffer = byteBufferObjectPool.borrowObject();
-        AbstractPersistenceTechnology currentPersistence = output;
+        AbstractPersistenceTechnology currentPersistence = persistenceTechnology;
         synchronized (this) {
             currentPersistence.register();
         }
         try {
             String idempotenceKey = constructIdempotenceKey(correlationId, delegateExecution.getCurrentActivityId());
             DelegateExecutionSerializer.writeBuoy(delegateExecution, idempotenceKey, byteBuffer, currentPersistence, new PersistenceFormat());
-            putCacheEntry(idempotenceKey, currentPersistence);
+            currentPersistence.putCacheEntry(idempotenceKey);
         } finally {
             synchronized (this) {
                 currentPersistence.unregister();
@@ -59,20 +60,18 @@ public abstract class AbstractIdempotence {
         }
     }
 
-    protected abstract void putCacheEntry(String idempotenceKey, AbstractPersistenceTechnology currentPersistence);
-
     public void readBuoyStateIntoProcessVariables(String correlationId, DelegateExecution delegateExecution)
             throws IOException {
         String idempotenceKey = constructIdempotenceKey(correlationId, delegateExecution.getCurrentActivityId());
         ByteBuffer byteBuffer = byteBufferObjectPool.borrowObject();
-        ReadAction readAction = output.prepareForRead(idempotenceKey, false, byteBuffer);
+        ReadAction readAction = persistenceTechnology.prepareForRead(idempotenceKey, false, byteBuffer);
         PersistenceFormat persistenceFormat = new PersistenceFormat();
         do {
             persistenceFormat.readChunk(idempotenceKey, byteBuffer, delegateExecution);
-        } while (output.readNext(readAction, byteBuffer) >= 0);
+        } while (persistenceTechnology.readNext(readAction, byteBuffer) >= 0);
 
         if (readAction.isLocked()) {
-            output.unlock();
+            persistenceTechnology.unlock();
         }
         byteBuffer.clear();
         byteBufferObjectPool.returnObject(byteBuffer);

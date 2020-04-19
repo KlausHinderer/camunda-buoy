@@ -65,6 +65,24 @@ public class RedisPersistence extends AbstractPersistenceTechnology<SocketChanne
     }
 
     @Override
+    public boolean entryExists(String key, ByteBuffer byteBuffer) {
+        byteBuffer.put(("EXISTS " + key).getBytes());
+        boolean locked = false;
+        try {
+            locked = AbstractStoreHolder.schreibeString("\r\n", byteBuffer, storeHolder, false, AbstractStoreHolder.WriteMode.FORCE_FLUSH_BUFFER_TO_CHANNEL);
+            int value = readLength(byteBuffer);
+            return value > 0;
+        } catch (IOException e) {
+            throw new RuntimeException("Cannot query Redis, EXISTS " + key, e);
+        } finally {
+            if (locked) {
+                unlock();
+            }
+        }
+
+    }
+
+    @Override
     public boolean beforeFirstWriteCommand(ByteBuffer byteBuffer, String key, boolean locked) throws IOException {
         byteBuffer.put(("APPEND " + key + " ").getBytes());
         //For cr lf
@@ -143,5 +161,10 @@ public class RedisPersistence extends AbstractPersistenceTechnology<SocketChanne
         readAction.setBytesAvailableForKey(bytesAvailableForKey);
         byteBuffer.flip();
         return bytesAvailableForKey;
+    }
+
+    @Override
+    public void putCacheEntry(String key) {
+        //Redis itself is the cache, so putBuoy() sets the entry.
     }
 }

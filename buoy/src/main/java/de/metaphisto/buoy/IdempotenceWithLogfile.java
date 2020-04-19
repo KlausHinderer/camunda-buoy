@@ -1,6 +1,5 @@
 package de.metaphisto.buoy;
 
-import de.metaphisto.buoy.persistence.AbstractPersistenceTechnology;
 import de.metaphisto.buoy.persistence.LogFilePersistence;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
 
@@ -13,11 +12,12 @@ public class IdempotenceWithLogfile extends AbstractIdempotence {
 
     private static IdempotenceWithLogfile instance = null;
     private final String filePrefix;
+    private ExpiringCache expiringCache = new ExpiringCache(360000);
 
     private IdempotenceWithLogfile(String filePrefix) {
         this.filePrefix = filePrefix;
         try {
-            output = new LogFilePersistence(getFilename(), expiringCache);
+            persistenceTechnology = new LogFilePersistence(getFilename(), expiringCache);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -52,23 +52,18 @@ public class IdempotenceWithLogfile extends AbstractIdempotence {
         super.readBuoyStateIntoProcessVariables(correlationId, delegateExecution);
     }
 
-    protected void rollover() throws IOException {
+    void rollover() throws IOException {
         LogFilePersistence rolledOverPersistence = new LogFilePersistence(
                 getFilename(), expiringCache);
         synchronized (this) {
             // Swap instances, current instance can have pending accesses.
-            ((LogFilePersistence) output).setRolloverHint();
-            output = rolledOverPersistence;
+            ((LogFilePersistence) persistenceTechnology).setRolloverHint();
+            persistenceTechnology = rolledOverPersistence;
         }
     }
 
     protected String constructIdempotenceKey(String correlationId, String processStepId) {
         return String.join("_", correlationId, processStepId);
-    }
-
-    @Override
-    protected void putCacheEntry(String idempotenceKey, AbstractPersistenceTechnology currentPersistence) {
-        expiringCache.put(idempotenceKey, ((LogFilePersistence) currentPersistence).getAnkerPackageName());
     }
 
 }

@@ -1,5 +1,7 @@
 package de.metaphisto.buoy.persistence;
 
+import org.camunda.bpm.engine.delegate.DelegateExecution;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
@@ -20,6 +22,9 @@ public abstract class AbstractPersistenceTechnology<T extends WritableByteChanne
         return locked;
         //TODO implement. or unite with appendNext.
     }
+
+    public abstract boolean entryExists(String key, ByteBuffer byteBuffer);
+
 
     /**
      * Writes an entry< key,toWrite > to the ByteBuffer. If buffer is full, it will be flushed to the underlying channel. May leave the whole of part of the String in the ByteBuffer if FORCE_FLUSH is not set.
@@ -140,4 +145,6 @@ public abstract class AbstractPersistenceTechnology<T extends WritableByteChanne
     public void unregister() {
         storeHolder.unregister();
     }
+
+    public abstract void putCacheEntry(String key);
 }
