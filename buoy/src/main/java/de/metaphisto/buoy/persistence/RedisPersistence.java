@@ -98,6 +98,10 @@ public class RedisPersistence extends AbstractPersistenceTechnology<SocketChanne
         }
         readLength(byteBuffer);
         byteBuffer.clear();
+
+        locked = AbstractStoreHolder.schreibeString("EXPIRE "+key +" 3600\r\n", byteBuffer, storeHolder, locked, AbstractStoreHolder.WriteMode.FORCE_FLUSH_BUFFER_TO_CHANNEL);
+        readLength(byteBuffer);
+        byteBuffer.clear();
         return locked;
     }
 

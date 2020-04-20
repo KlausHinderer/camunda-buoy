@@ -13,7 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- *
+ * Defines the format of the serialized data.
  */
 public class PersistenceFormat {
     public boolean writeVariable(String variableName, String variableType, String variableValue, String key, ByteBuffer byteBuffer, AbstractPersistenceTechnology persistenceTechnology, boolean locked) throws IOException {
@@ -34,25 +34,18 @@ public class PersistenceFormat {
         return locked;
     }
 
-    public boolean beginScope(String scopeName, String key, ByteBuffer byteBuffer, AbstractPersistenceTechnology persistenceTechnology, boolean locked) {
-        return locked;
-    }
-
-    public boolean endScope(String scopeName, String key, ByteBuffer byteBuffer, AbstractPersistenceTechnology persistenceTechnology, boolean locked) {
-        return locked;
-    }
-
-
-    //Points to the execution or to a parent
-    private DelegateExecution currentExecution = null;
-
     private VariableState variableState;
     public List<String> readValues = new ArrayList<>(3);
 
     public void readChunk(String key, ByteBuffer byteBuffer, DelegateExecution delegateExecution) {
+        //Points to the execution or to a parent
+        DelegateExecution currentExecution = delegateExecution;
+
         if (variableState == null) {
             variableState = StartScopeOrVariableState.getInstance();
             readValues.clear();
+
+
         }
         do {
             boolean stateComplete = variableState.consume(byteBuffer);
@@ -61,14 +54,14 @@ public class PersistenceFormat {
                     return;
                 }
                 if (((StartScopeOrVariableState) variableState).isStartScope()) {
-                    delegateExecution = delegateExecution.getSuperExecution();
+                    currentExecution = currentExecution.getSuperExecution();
                 }
             }
             if (stateComplete) {
                 //transition to next state
                 if (variableState.hasOutput()) {
                     if(variableState instanceof ReadVariableValue) {
-                        writeSavedStateToProcessVariables(readValues.get(0),readValues.get(1), variableState.getValue(), (ExecutionEntity) delegateExecution);
+                        writeSavedStateToProcessVariables(readValues.get(0),readValues.get(1), variableState.getValue(), (ExecutionEntity) currentExecution);
                         readValues.clear();
                     }else {
                         readValues.add(variableState.getValue());

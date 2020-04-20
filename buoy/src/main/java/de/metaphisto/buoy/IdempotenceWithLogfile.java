@@ -8,6 +8,17 @@ import java.nio.ByteBuffer;
 import java.util.Stack;
 import java.util.concurrent.locks.LockSupport;
 
+/**
+ * Uses a Logfile to store Idempotence information.
+ * This implementation works, however there are reasons to prefer Redis:
+ * - LogFiles are node-local, if a process has a technical error it has to be restarted on the same node
+ * - Current Implementation uses an im-memory cache that won't survive a server restart
+ * <p>
+ * If you want to use Logfile-based idempotence in production and you can accept that the idempotence is per-node,
+ * you can prefill the in-memory cache ot server start by reading the files and putting each key with the filename in the expiringCache.
+ *
+ * Recommendation: Use log-based idempotence in your test-stages where redis isn't available and use redis-based idempotence in production.
+ */
 public class IdempotenceWithLogfile extends AbstractIdempotence {
 
     private static IdempotenceWithLogfile instance = null;
@@ -74,8 +85,8 @@ class ByteBufferObjectPool extends ObjectPool<ByteBuffer> {
 
     protected ByteBufferObjectPool(int maxSize, int bufferSize) {
         super(maxSize);
-        if(bufferSize<512) {
-            throw new RuntimeException("Buffersize '"+bufferSize+"' is too small, use at least 512");
+        if (bufferSize < 512) {
+            throw new RuntimeException("Buffersize '" + bufferSize + "' is too small, use at least 512");
         }
         this.bufferSize = bufferSize;
     }
