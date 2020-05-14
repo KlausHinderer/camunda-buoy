@@ -142,4 +142,12 @@ public abstract class AbstractPersistenceTechnology<T extends WritableByteChanne
     }
 
     public abstract void putCacheEntry(String key);
+
+    public void close() {
+        try {
+            storeHolder.getChannel().close();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

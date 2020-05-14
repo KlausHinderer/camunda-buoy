@@ -14,11 +14,11 @@ public class Idempotence extends AbstractIdempotence {
     }
 
     public static synchronized void initialize(AbstractPersistenceTechnology abstractPersistenceTechnology) {
-        if (instance == null) {
-            instance = new Idempotence(abstractPersistenceTechnology);
-        } else {
-            throw new RuntimeException("Already initialized");
+        if(instance != null) {
+            instance.persistenceTechnology.unregister();
+            instance.persistenceTechnology.close();
         }
+        instance = new Idempotence(abstractPersistenceTechnology);
     }
 
     public static synchronized boolean isInitialized() {

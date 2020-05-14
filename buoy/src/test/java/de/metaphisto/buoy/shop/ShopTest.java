@@ -42,11 +42,6 @@ public class ShopTest {
     }
 
     public void placeOrder() {
-        AbstractPersistenceTechnology redisPersistence = new RedisPersistence(null, 6381);
-
-        if (!Idempotence.isInitialized()) {
-            Idempotence.initialize(redisPersistence);
-        }
 
         //Add limited stock so a reorder will lead to errors
         CheckAvailabilityService.addStock(CHEESE, 1);
@@ -78,6 +73,9 @@ public class ShopTest {
     @Test
     @Deployment(resources = {"toplevel.bpmn", "calculateprice.bpmn"})
     public void testPlaceOrderWithIdempotence(){
+        AbstractPersistenceTechnology redisPersistence = new RedisPersistence(null, 6381);
+        Idempotence.initialize(redisPersistence);
+
         AbstractIdempotentDelegate.idempotenceMode = true;
         placeOrder();
     }

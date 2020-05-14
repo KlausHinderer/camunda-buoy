@@ -18,7 +18,7 @@ import static de.metaphisto.buoy.persistence.AbstractStoreHolder.WriteMode.FORCE
  */
 public abstract class AbstractStoreHolder<T extends WritableByteChannel> {
 
-    public static final boolean DEBUG_LOG = true;
+    public static final boolean DEBUG_LOG = false;
     protected static final Logger LOG = LoggerFactory.getLogger(FileChannelHolder.class);
     protected String ankerPackageName;
     private AtomicBoolean locked = new AtomicBoolean(false);
