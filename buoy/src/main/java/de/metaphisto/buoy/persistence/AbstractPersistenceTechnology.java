@@ -1,7 +1,5 @@
 package de.metaphisto.buoy.persistence;
 
-import org.camunda.bpm.engine.delegate.DelegateExecution;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
@@ -60,9 +58,6 @@ public abstract class AbstractPersistenceTechnology<T extends WritableByteChanne
                 i = i + bytesZuSchreiben;
             } while (i < bytes.length);
         } else {
-            if (SocketStoreHolder.DEBUG_LOG) {
-                System.out.println(toWrite);
-            }
             byteBuffer.put(bytes);
         }
 

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_1rs7h4h" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="3.3.2">
+  <bpmn:process id="Process_calculate-price" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:outgoing>SequenceFlow_0g24nk2</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:task id="Task_zero-sum" name="set sum to 0">
+      <bpmn:extensionElements>
+        <camunda:executionListener class="de.metaphisto.buoy.shop.ZeroSumListener" event="end" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>SequenceFlow_0g24nk2</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_1o3c9zl</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:sequenceFlow id="SequenceFlow_0g24nk2" sourceRef="StartEvent_1" targetRef="Task_zero-sum" />
+    <bpmn:sequenceFlow id="SequenceFlow_1o3c9zl" sourceRef="Task_zero-sum" targetRef="Task_add-to-sum" />
+    <bpmn:endEvent id="EndEvent_1y7fg1p">
+      <bpmn:incoming>SequenceFlow_10hobtr</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="SequenceFlow_10hobtr" sourceRef="Task_add-to-sum" targetRef="EndEvent_1y7fg1p" />
+    <bpmn:serviceTask id="Task_add-to-sum" name="add position to sum" camunda:class="de.metaphisto.buoy.shop.AddPositionToSumService">
+      <bpmn:incoming>SequenceFlow_1o3c9zl</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_10hobtr</bpmn:outgoing>
+      <bpmn:multiInstanceLoopCharacteristics camunda:collection="order" camunda:elementVariable="position" />
+    </bpmn:serviceTask>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_calculate-price">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="179" y="99" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_1kqcvxm_di" bpmnElement="Task_zero-sum">
+        <dc:Bounds x="270" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_0g24nk2_di" bpmnElement="SequenceFlow_0g24nk2">
+        <di:waypoint x="215" y="117" />
+        <di:waypoint x="270" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_1o3c9zl_di" bpmnElement="SequenceFlow_1o3c9zl">
+        <di:waypoint x="370" y="117" />
+        <di:waypoint x="440" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="EndEvent_1y7fg1p_di" bpmnElement="EndEvent_1y7fg1p">
+        <dc:Bounds x="612" y="99" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_10hobtr_di" bpmnElement="SequenceFlow_10hobtr">
+        <di:waypoint x="540" y="117" />
+        <di:waypoint x="612" y="117" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="ServiceTask_0ueuyoc_di" bpmnElement="Task_add-to-sum">
+        <dc:Bounds x="440" y="77" width="100" height="80" />
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

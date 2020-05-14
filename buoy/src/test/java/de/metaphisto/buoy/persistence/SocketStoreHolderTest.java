@@ -32,7 +32,7 @@ public class SocketStoreHolderTest {
     @Test
     public void testRedisSocketStoreHolder() throws IOException {
         ByteBuffer byteBuffer = ByteBuffer.allocateDirect(2048);
-        SocketStoreHolder socketStoreHolder = new SocketStoreHolder("");
+        SocketStoreHolder socketStoreHolder = new SocketStoreHolder("", null, 6380);
 
         byteBuffer.put("SET KEY VALUE1\n".getBytes(Charset.defaultCharset()));
         byteBuffer.flip();
@@ -55,7 +55,7 @@ public class SocketStoreHolderTest {
 
     @Test
     public void testAbstractStoreHolderWrite() throws IOException {
-        SocketStoreHolder socketStoreHolder = new SocketStoreHolder("");
+        SocketStoreHolder socketStoreHolder = new SocketStoreHolder("", null, 6380);
         ByteBuffer byteBuffer = ByteBuffer.allocateDirect(128);
         AbstractStoreHolder.schreibeString("SET KEY1 VALUE2\n", byteBuffer, socketStoreHolder, false, AbstractStoreHolder.WriteMode.FORCE_FLUSH_BUFFER_TO_CHANNEL);
         int read;
@@ -75,7 +75,7 @@ public class SocketStoreHolderTest {
 
     @Test
     public void testBufferOverlap() throws IOException {
-        SocketStoreHolder socketStoreHolder = new SocketStoreHolder("");
+        SocketStoreHolder socketStoreHolder = new SocketStoreHolder("", null, 6380);
         ByteBuffer byteBuffer = ByteBuffer.allocateDirect(2);
         AbstractStoreHolder.schreibeString("SET KEY1 VALUE2\n", byteBuffer, socketStoreHolder, false, AbstractStoreHolder.WriteMode.FORCE_FLUSH_BUFFER_TO_CHANNEL);
         int read;
@@ -96,7 +96,7 @@ public class SocketStoreHolderTest {
     public void testPerformance2M() throws IOException {
         int outstandingBytes = 0;
         ByteBuffer byteBuffer = ByteBuffer.allocateDirect(2048);
-        SocketStoreHolder socketStoreHolder = new SocketStoreHolder("");
+        SocketStoreHolder socketStoreHolder = new SocketStoreHolder("", null, 6380);
 
         long start = System.currentTimeMillis();
         for (int i = 0; i < 1024; i++) {

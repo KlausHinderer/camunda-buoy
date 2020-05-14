@@ -18,7 +18,7 @@ import static de.metaphisto.buoy.persistence.AbstractStoreHolder.WriteMode.FORCE
  */
 public abstract class AbstractStoreHolder<T extends WritableByteChannel> {
 
-    public static final boolean DEBUG_LOG = false;
+    public static final boolean DEBUG_LOG = true;
     protected static final Logger LOG = LoggerFactory.getLogger(FileChannelHolder.class);
     protected String ankerPackageName;
     private AtomicBoolean locked = new AtomicBoolean(false);
@@ -41,7 +41,12 @@ public abstract class AbstractStoreHolder<T extends WritableByteChannel> {
      */
     public static boolean schreibeString(String toWrite, ByteBuffer byteBuffer, AbstractStoreHolder channel, boolean locked, WriteMode writeMode) throws IOException {
         if (DEBUG_LOG) {
-            System.out.println(toWrite);
+            ByteBuffer duplicate = byteBuffer.duplicate();
+            int bytes = duplicate.position();
+            duplicate.flip();
+            byte[] temp = new byte[bytes];
+            duplicate.get(temp);
+            System.out.println(new String(temp) + toWrite);
         }
         byte[] bytes = toWrite.getBytes(Charset.defaultCharset());
         int i = 0;

@@ -24,7 +24,7 @@ public abstract class AbstractIdempotence {
         ByteBuffer byteBuffer = byteBufferObjectPool.borrowObject();
         try {
             return persistenceTechnology.entryExists(key, byteBuffer);
-        }finally {
+        } finally {
             byteBuffer.clear();
             byteBufferObjectPool.returnObject(byteBuffer);
         }
@@ -48,7 +48,7 @@ public abstract class AbstractIdempotence {
         }
         try {
             String idempotenceKey = constructIdempotenceKey(correlationId, delegateExecution.getCurrentActivityId());
-            DelegateExecutionSerializer.writeBuoy(delegateExecution, idempotenceKey, byteBuffer, currentPersistence, new PersistenceFormat());
+            DelegateExecutionSerializer.writeBuoy(delegateExecution, idempotenceKey, byteBuffer, currentPersistence, new PersistenceFormat(), true);
             currentPersistence.putCacheEntry(idempotenceKey);
         } finally {
             synchronized (this) {

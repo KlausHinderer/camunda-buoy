@@ -59,34 +59,36 @@ class StartScopeOrVariableState extends VariableState {
     private VariableState nextState = null;
     private boolean terminator = false;
 
-    private StartScopeOrVariableState(){}
+    private StartScopeOrVariableState() {
+    }
 
-    public static StartScopeOrVariableState getInstance(){
+    public static StartScopeOrVariableState getInstance() {
         INSTANCE.nextState = null;
         INSTANCE.terminator = false;
         return INSTANCE;
     }
 
-    public boolean isStartScope(){
-        return ! (nextState instanceof VariableNameState);
+    public boolean isStartScope() {
+        return !terminator && !(nextState instanceof VariableNameState);
     }
 
-    public boolean isTerminator(){
+    public boolean isTerminator() {
         return terminator;
     }
 
     @Override
     public boolean consume(ByteBuffer byteBuffer) {
-        if(byteBuffer.hasRemaining()) {
+        if (byteBuffer.hasRemaining()) {
             byte b = byteBuffer.get();
-            if(START_VARIABLE == b) {
+            if (START_VARIABLE == b) {
                 nextState = VariableNameState.getInstance();
                 return true;
-            } else if(TERMINATOR == b){
-              terminator = true;
-              return true;
+            } else if (TERMINATOR == b) {
+                terminator = true;
+                nextState = this; //don't use getInstance, as it will clear the values
+                return true;
             } else {
-
+                nextState = StartScopeOrVariableState.getInstance();
                 return true;
             }
         }
@@ -236,13 +238,13 @@ class ReadVariableValue extends VariableState {
             } else {
                 variableBuffer.add(b);
                 remainingLength--;
-                if(remainingLength == 0) {
+                if (remainingLength == 0) {
                     valueDone = true;
                 }
             }
         }
         //read the closing bracket
-        if(valueDone && byteBuffer.hasRemaining()){
+        if (valueDone && byteBuffer.hasRemaining()) {
             byte b = byteBuffer.get();
             return true;
         }

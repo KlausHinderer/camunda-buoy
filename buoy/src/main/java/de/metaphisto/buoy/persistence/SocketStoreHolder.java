@@ -9,9 +9,12 @@ import java.nio.channels.SocketChannel;
 public class SocketStoreHolder extends AbstractStoreHolder<SocketChannel> {
     private final SocketChannel socketChannel;
 
-    SocketStoreHolder(String ankerPackageName) {
+    SocketStoreHolder(String ankerPackageName, String host, int port) {
         super(ankerPackageName);
-        SocketAddress socketAddress = new InetSocketAddress("localhost", 6380);
+        if(host == null) {
+            host = "localhost";
+        }
+        SocketAddress socketAddress = new InetSocketAddress(host, port);
         try {
             socketChannel = SocketChannel.open();
             socketChannel.configureBlocking(true);

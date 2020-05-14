@@ -16,7 +16,11 @@ public class RedisPersistence extends AbstractPersistenceTechnology<SocketChanne
     private static final byte[] CR_LF = "\r\n".getBytes();
 
     public RedisPersistence() {
-        storeHolder = new SocketStoreHolder("");
+        this(null, 6380);
+    }
+
+    public RedisPersistence(String host, int port) {
+        storeHolder = new SocketStoreHolder("", host, port);
         COMMAND_TERMINATOR.clear();
         COMMAND_TERMINATOR.put(CR_LF);
     }
@@ -48,6 +52,9 @@ public class RedisPersistence extends AbstractPersistenceTechnology<SocketChanne
                 if (b == ":".getBytes()[0]) {
                 } else if (b == "\n".getBytes()[0]) {
                     byteBuffer.clear();
+                    if(AbstractStoreHolder.DEBUG_LOG) {
+                        System.out.println(responseLengthString);
+                    }
                     return Integer.valueOf(responseLengthString.toString());
                 } else if (b == "\r".getBytes()[0]) {
                 } else {

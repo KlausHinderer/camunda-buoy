@@ -33,7 +33,7 @@ public class PersistenceFormatTest {
     public void testWriteThenRead() throws IOException {
         PersistenceFormat persistenceFormat = new PersistenceFormat();
         ByteBuffer byteBuffer = ByteBuffer.allocateDirect(256);
-        persistenceFormat.writeVariable(VARIABLE_NAME, VARIABLE_TYPE, VARIABLE_VALUE, "key", byteBuffer, new LogFilePersistence("target/as", new ExpiringCache(1000)), true);
+        persistenceFormat.writeVariable(VARIABLE_NAME, VARIABLE_TYPE, VARIABLE_VALUE, "key", byteBuffer, new LogFilePersistence("target/as" + System.nanoTime(), new ExpiringCache(1000)), true);
         byteBuffer.flip();
         persistenceFormat.readChunk("key", byteBuffer, delegateExecution);
         Mockito.verify(delegateExecution, Mockito.times(1)).setVariableLocal(eq(VARIABLE_NAME),any(TypedValue.class), eq(delegateExecution));

@@ -10,12 +10,21 @@ import org.camunda.bpm.engine.variable.value.TypedValue;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 
 /**
  * Defines the format of the serialized data.
  */
 public class PersistenceFormat {
+
+    public static final String ENCODED = "Encoded";
+
+    public boolean startScope(String key, ByteBuffer byteBuffer, AbstractPersistenceTechnology persistenceTechnology, boolean locked) throws IOException {
+        locked = persistenceTechnology.appendNext("{",key, byteBuffer, locked, AbstractStoreHolder.WriteMode.ONLY_FLUSH_IF_BUFFER_FULL);
+        return locked;
+    }
+
     public boolean writeVariable(String variableName, String variableType, String variableValue, String key, ByteBuffer byteBuffer, AbstractPersistenceTechnology persistenceTechnology, boolean locked) throws IOException {
         variableState = StartScopeOrVariableState.getInstance();
         //Serialize prefix
@@ -44,17 +53,20 @@ public class PersistenceFormat {
         if (variableState == null) {
             variableState = StartScopeOrVariableState.getInstance();
             readValues.clear();
-
-
         }
+        int level = 0;
         do {
             boolean stateComplete = variableState.consume(byteBuffer);
             if (variableState instanceof StartScopeOrVariableState) {
                 if (((StartScopeOrVariableState) variableState).isTerminator()) {
-                    return;
+                    level--;
+                    if(level<0) {
+                        return;
+                    }
                 }
                 if (((StartScopeOrVariableState) variableState).isStartScope()) {
-                    currentExecution = currentExecution.getSuperExecution();
+                    level++;
+                    currentExecution = ((ExecutionEntity)currentExecution).getParent();
                 }
             }
             if (stateComplete) {
@@ -73,6 +85,10 @@ public class PersistenceFormat {
     }
 
     private void writeSavedStateToProcessVariables(String name, String type, String value, ExecutionEntity executionEntity) {
+        if(type.endsWith(ENCODED)){
+            type = type.substring(0, type.indexOf(ENCODED));
+            value = new String(Base64.getDecoder().decode(value.getBytes()));
+        }
         TypedValue typedValue;
         switch (type) {
             case "NullValueImpl":
@@ -83,6 +99,15 @@ public class PersistenceFormat {
                 break;
             case "long":
                 typedValue = new PrimitiveTypeValueImpl.LongValueImpl(Long.valueOf(value));
+                break;
+            case "integer":
+                typedValue = new PrimitiveTypeValueImpl.IntegerValueImpl(Integer.valueOf(value));
+                break;
+            case "boolean":
+                typedValue = new PrimitiveTypeValueImpl.BooleanValueImpl(Boolean.valueOf(value));
+                break;
+            case "double":
+                typedValue = new PrimitiveTypeValueImpl.DoubleValueImpl(Double.valueOf(value));
                 break;
             default:
                 typedValue = new ObjectValueImpl(null, value, "application/x-java-serialized-object", type, false);
