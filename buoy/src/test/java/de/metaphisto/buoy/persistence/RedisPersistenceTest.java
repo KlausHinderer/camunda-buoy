@@ -101,7 +101,7 @@ public class RedisPersistenceTest {
             //System.out.println(new String(temp));
         } while (redisPersistence.readNext(readAction, byteBuffer) >= 0);
 
-        if(readAction.isLocked()){
+        if (readAction.isLocked()) {
             redisPersistence.unlock();
         }
         assertEquals("Written bytes +2 for cr lf must match read bytes", -2, outstandingBytes);
