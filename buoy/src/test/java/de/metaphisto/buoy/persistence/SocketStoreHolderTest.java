@@ -57,7 +57,7 @@ public class SocketStoreHolderTest {
     public void testAbstractStoreHolderWrite() throws IOException {
         SocketStoreHolder socketStoreHolder = new SocketStoreHolder("", null, 6380);
         ByteBuffer byteBuffer = ByteBuffer.allocateDirect(128);
-        AbstractStoreHolder.schreibeString("SET KEY1 VALUE2\n", byteBuffer, socketStoreHolder, false, AbstractStoreHolder.WriteMode.FORCE_FLUSH_BUFFER_TO_CHANNEL);
+        AbstractStoreHolder.writeString("SET KEY1 VALUE2\n", byteBuffer, socketStoreHolder, false, AbstractStoreHolder.WriteMode.FORCE_FLUSH_BUFFER_TO_CHANNEL);
         int read;
         do {
             read = socketStoreHolder.getChannel().read(byteBuffer);
@@ -77,7 +77,7 @@ public class SocketStoreHolderTest {
     public void testBufferOverlap() throws IOException {
         SocketStoreHolder socketStoreHolder = new SocketStoreHolder("", null, 6380);
         ByteBuffer byteBuffer = ByteBuffer.allocateDirect(2);
-        AbstractStoreHolder.schreibeString("SET KEY1 VALUE2\n", byteBuffer, socketStoreHolder, false, AbstractStoreHolder.WriteMode.FORCE_FLUSH_BUFFER_TO_CHANNEL);
+        AbstractStoreHolder.writeString("SET KEY1 VALUE2\n", byteBuffer, socketStoreHolder, false, AbstractStoreHolder.WriteMode.FORCE_FLUSH_BUFFER_TO_CHANNEL);
         int read;
         do {
             read = socketStoreHolder.getChannel().read(byteBuffer);
@@ -105,10 +105,10 @@ public class SocketStoreHolderTest {
             //the length of the value is not known, so APPEND is used instead of SET in RESP
             byteBuffer.put("APPEND KEY ".getBytes(Charset.defaultCharset()));
             for (int j = 0; j < 202; j++) {
-                locked = AbstractStoreHolder.schreibeString("1234567890", byteBuffer, socketStoreHolder, locked, AbstractStoreHolder.WriteMode.ONLY_FLUSH_IF_BUFFER_FULL);
+                locked = AbstractStoreHolder.writeString("1234567890", byteBuffer, socketStoreHolder, locked, AbstractStoreHolder.WriteMode.ONLY_FLUSH_IF_BUFFER_FULL);
                 outstandingBytes += 10;
             }
-            AbstractStoreHolder.schreibeString("\n", byteBuffer, socketStoreHolder, locked, AbstractStoreHolder.WriteMode.FORCE_FLUSH_BUFFER_TO_CHANNEL);
+            AbstractStoreHolder.writeString("\n", byteBuffer, socketStoreHolder, locked, AbstractStoreHolder.WriteMode.FORCE_FLUSH_BUFFER_TO_CHANNEL);
             int read;
             do {
                 read = socketStoreHolder.getChannel().read(byteBuffer);
@@ -117,7 +117,7 @@ public class SocketStoreHolderTest {
 
         byteBuffer.clear();
         //*2 für Key + Value, $3 für GET.length, $3 für KEY.length
-        AbstractStoreHolder.schreibeString("*2\r\n$3\r\nGET\r\n$3\r\nKEY\r\n", byteBuffer, socketStoreHolder, true, AbstractStoreHolder.WriteMode.FORCE_FLUSH_BUFFER_TO_CHANNEL);
+        AbstractStoreHolder.writeString("*2\r\n$3\r\nGET\r\n$3\r\nKEY\r\n", byteBuffer, socketStoreHolder, true, AbstractStoreHolder.WriteMode.FORCE_FLUSH_BUFFER_TO_CHANNEL);
 
         assertEquals(1024 * 202 * 10, outstandingBytes);
         //First part of response is the length

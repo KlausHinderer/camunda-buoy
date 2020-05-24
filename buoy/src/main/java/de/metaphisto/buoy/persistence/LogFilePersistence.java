@@ -30,13 +30,13 @@ public class LogFilePersistence extends AbstractPersistenceTechnology<FileChanne
 
     @Override
     public boolean beforeFirstWriteCommand(ByteBuffer byteBuffer, String key, boolean locked) throws IOException {
-        locked = AbstractStoreHolder.schreibeString(key + "{", byteBuffer, storeHolder, locked, AbstractStoreHolder.WriteMode.ONLY_FLUSH_IF_BUFFER_FULL);
+        locked = AbstractStoreHolder.writeString(key + "{", byteBuffer, storeHolder, locked, AbstractStoreHolder.WriteMode.ONLY_FLUSH_IF_BUFFER_FULL);
         return locked;
     }
 
     @Override
     public boolean afterLastWriteCommand(ByteBuffer byteBuffer, String key, boolean locked) throws IOException {
-        return AbstractStoreHolder.schreibeString("}\n", byteBuffer, storeHolder, locked, AbstractStoreHolder.WriteMode.FORCE_FLUSH_BUFFER_TO_CHANNEL);
+        return AbstractStoreHolder.writeString("}\n", byteBuffer, storeHolder, locked, AbstractStoreHolder.WriteMode.FORCE_FLUSH_BUFFER_TO_CHANNEL);
     }
 
     @Override

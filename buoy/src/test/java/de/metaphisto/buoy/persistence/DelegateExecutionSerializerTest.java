@@ -44,10 +44,10 @@ public class DelegateExecutionSerializerTest {
             }
         });
         Mockito.when(fileChannelHolder.getChannel()).thenReturn(fileChannel);
-        AbstractStoreHolder.schreibeString(TEST_STRING, byteBuffer, fileChannelHolder, false, AbstractStoreHolder.WriteMode.ONLY_FLUSH_IF_BUFFER_FULL);
+        AbstractStoreHolder.writeString(TEST_STRING, byteBuffer, fileChannelHolder, false, AbstractStoreHolder.WriteMode.ONLY_FLUSH_IF_BUFFER_FULL);
         assertEquals(1, byteBuffer.remaining());
         Mockito.verify(fileChannel, Mockito.never()).write(byteBuffer);
-        AbstractStoreHolder.schreibeString(TEST_STRING, byteBuffer, fileChannelHolder, false, AbstractStoreHolder.WriteMode.ONLY_FLUSH_IF_BUFFER_FULL);
+        AbstractStoreHolder.writeString(TEST_STRING, byteBuffer, fileChannelHolder, false, AbstractStoreHolder.WriteMode.ONLY_FLUSH_IF_BUFFER_FULL);
         assertEquals(2, byteBuffer.remaining());
         Mockito.verify(fileChannel, Mockito.times(1)).write(byteBuffer);
     }
@@ -71,7 +71,7 @@ public class DelegateExecutionSerializerTest {
                     for (int i = 0; i < 2000; i++) {
                         try {
                             for (int j = 0; j < 100; j++) {
-                                locked = locked | AbstractStoreHolder.schreibeString(zuSchreiben, byteBuffer, ziel, locked, AbstractStoreHolder.WriteMode.ONLY_FLUSH_IF_BUFFER_FULL);
+                                locked = locked | AbstractStoreHolder.writeString(zuSchreiben, byteBuffer, ziel, locked, AbstractStoreHolder.WriteMode.ONLY_FLUSH_IF_BUFFER_FULL);
                             }
                             if (byteBuffer.position() > 0) {
                                 byteBuffer.flip();

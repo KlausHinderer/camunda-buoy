@@ -56,7 +56,7 @@
         <!--
             Name of the test Uber-JAR to generate.
           -->
-        <uberjar.name>jcstress</uberjar.name>
+        <uberjar.name>buoy-jcstress</uberjar.name>
     </properties>
 
     <build>

@@ -27,6 +27,7 @@ public class Idempotence extends AbstractIdempotence {
 
     public static synchronized Idempotence getInstance() {
         if (instance == null) {
+            //todo align with IdempotenceWithLogfile, create new instance instead of exception
             throw new RuntimeException("not initialized");
         }
         return instance;

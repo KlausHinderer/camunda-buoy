@@ -29,7 +29,7 @@ public class DelegateExecutionSerializer {
      * @throws IOException wenn etwas schiefgeht
      */
     public static void writeBuoy(DelegateExecution execution, String key, ByteBuffer byteBuffer, AbstractPersistenceTechnology target, PersistenceFormat persistenceFormat, boolean istopLevel) throws IOException {
-        // Benutzt Locks, weil die Schreiboperationen hintereinander passieren müssen
+        // Since each buoy is written in parts (chunks), locks are used to avoid mixing buoy-chunks
         boolean locked = false;
         try {
             if (istopLevel) {

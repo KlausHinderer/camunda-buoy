@@ -12,7 +12,7 @@ import java.util.Map;
 
 @JCStressTest
 // Outline the outcomes here. The default outcome is provided, you need to remove it:
-@Outcome(id = "with the work, with the work", expect = Expect.ACCEPTABLE, desc = "Default outcome.")
+@Outcome(id = "with the work, with the work", expect = Expect.FORBIDDEN, desc = "Idempotence situation not detected")
 @Outcome(id = "lazy, with the work", expect = Expect.ACCEPTABLE, desc = "Default outcome.")
 @Outcome(id = "with the work, lazy", expect = Expect.ACCEPTABLE, desc = "Default outcome.")
 @Outcome(id = "lazy, lazy", expect = Expect.ACCEPTABLE, desc = "Default outcome.")
@@ -20,7 +20,7 @@ import java.util.Map;
 public class CamundaTest {
     private static ProcessEngineConfiguration processEngineConfiguration = ProcessEngineConfiguration.createStandaloneInMemProcessEngineConfiguration()
             .setJdbcUrl("jdbc:h2:mem:camunda" + System.currentTimeMillis());
-    ;
+
     private static final ProcessEngine engine = processEngineConfiguration.buildProcessEngine();
 
     static {

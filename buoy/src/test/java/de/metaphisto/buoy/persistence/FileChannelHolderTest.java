@@ -26,15 +26,15 @@ public class FileChannelHolderTest {
         boolean locked = false;
 
         ByteBuffer byteBuffer = ByteBuffer.allocateDirect(4);
-        locked = AbstractStoreHolder.schreibeString("12345678", byteBuffer, fileChannelHolder, locked, AbstractStoreHolder.WriteMode.ONLY_FLUSH_IF_BUFFER_FULL);
+        locked = AbstractStoreHolder.writeString("12345678", byteBuffer, fileChannelHolder, locked, AbstractStoreHolder.WriteMode.ONLY_FLUSH_IF_BUFFER_FULL);
         assertEquals(8, file.length());
         assertTrue(locked);
         assertEquals(4, byteBuffer.remaining());
-        locked = AbstractStoreHolder.schreibeString("1234567", byteBuffer, fileChannelHolder, locked, AbstractStoreHolder.WriteMode.ONLY_FLUSH_IF_BUFFER_FULL);
+        locked = AbstractStoreHolder.writeString("1234567", byteBuffer, fileChannelHolder, locked, AbstractStoreHolder.WriteMode.ONLY_FLUSH_IF_BUFFER_FULL);
         assertEquals("The next full buffersize must have been written", 12, file.length());
         assertEquals("3 bytes must be in the buffer", 3, byteBuffer.position());
 
-        locked = AbstractStoreHolder.schreibeString("1234", byteBuffer, fileChannelHolder, locked, AbstractStoreHolder.WriteMode.FORCE_FLUSH_BUFFER_TO_CHANNEL);
+        locked = AbstractStoreHolder.writeString("1234", byteBuffer, fileChannelHolder, locked, AbstractStoreHolder.WriteMode.FORCE_FLUSH_BUFFER_TO_CHANNEL);
         assertEquals("buffer must be empty after forced flush", 0, byteBuffer.position());
         assertEquals("Only a forced flush can make the file grow by a size != buffersize", 19, file.length());
         fileChannelHolder.unlock();

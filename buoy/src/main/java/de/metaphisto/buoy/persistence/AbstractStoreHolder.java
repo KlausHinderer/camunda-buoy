@@ -36,10 +36,12 @@ public abstract class AbstractStoreHolder<T extends WritableByteChannel> {
      * @param toWrite    the desired String
      * @param byteBuffer the target
      * @param channel    the underlying channel
+     * @param locked     the lock for the storeHolder
+     * @param writeMode  the flushing strategy
      * @return true if the channel has been locked
      * @throws IOException when flushing to the channel went wrong
      */
-    public static boolean schreibeString(String toWrite, ByteBuffer byteBuffer, AbstractStoreHolder channel, boolean locked, WriteMode writeMode) throws IOException {
+    public static boolean writeString(String toWrite, ByteBuffer byteBuffer, AbstractStoreHolder channel, boolean locked, WriteMode writeMode) throws IOException {
         if (DEBUG_LOG) {
             ByteBuffer duplicate = byteBuffer.duplicate();
             int bytes = duplicate.position();

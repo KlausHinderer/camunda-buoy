@@ -76,7 +76,7 @@ public class RedisPersistence extends AbstractPersistenceTechnology<SocketChanne
         byteBuffer.put(("EXISTS " + key).getBytes());
         boolean locked = false;
         try {
-            locked = AbstractStoreHolder.schreibeString("\r\n", byteBuffer, storeHolder, false, AbstractStoreHolder.WriteMode.FORCE_FLUSH_BUFFER_TO_CHANNEL);
+            locked = AbstractStoreHolder.writeString("\r\n", byteBuffer, storeHolder, false, AbstractStoreHolder.WriteMode.FORCE_FLUSH_BUFFER_TO_CHANNEL);
             int value = readLength(byteBuffer);
             return value > 0;
         } catch (IOException e) {
@@ -101,12 +101,12 @@ public class RedisPersistence extends AbstractPersistenceTechnology<SocketChanne
     public boolean afterLastWriteCommand(ByteBuffer byteBuffer, String key, boolean locked) throws IOException {
         byte[] commandBytes = ("APPEND " + key + " ").getBytes();
         if (byteBuffer.position() > commandBytes.length) {
-            locked = AbstractStoreHolder.schreibeString("\r\n", byteBuffer, storeHolder, locked, AbstractStoreHolder.WriteMode.FORCE_FLUSH_BUFFER_TO_CHANNEL);
+            locked = AbstractStoreHolder.writeString("\r\n", byteBuffer, storeHolder, locked, AbstractStoreHolder.WriteMode.FORCE_FLUSH_BUFFER_TO_CHANNEL);
         }
         readLength(byteBuffer);
         byteBuffer.clear();
 
-        locked = AbstractStoreHolder.schreibeString("EXPIRE "+key +" 3600\r\n", byteBuffer, storeHolder, locked, AbstractStoreHolder.WriteMode.FORCE_FLUSH_BUFFER_TO_CHANNEL);
+        locked = AbstractStoreHolder.writeString("EXPIRE "+key +" 3600\r\n", byteBuffer, storeHolder, locked, AbstractStoreHolder.WriteMode.FORCE_FLUSH_BUFFER_TO_CHANNEL);
         readLength(byteBuffer);
         byteBuffer.clear();
         return locked;
@@ -129,7 +129,7 @@ public class RedisPersistence extends AbstractPersistenceTechnology<SocketChanne
             locked = true;
         }
         ReadAction readAction = null;
-        AbstractStoreHolder.schreibeString("*2\r\n$3\r\nGET\r\n$" + key.length() + "\r\n" + key + "\r\n", byteBuffer, storeHolder, locked, AbstractStoreHolder.WriteMode.FORCE_FLUSH_BUFFER_TO_CHANNEL);
+        AbstractStoreHolder.writeString("*2\r\n$3\r\nGET\r\n$" + key.length() + "\r\n" + key + "\r\n", byteBuffer, storeHolder, locked, AbstractStoreHolder.WriteMode.FORCE_FLUSH_BUFFER_TO_CHANNEL);
 
         String responseLengthString = null;
         do {
