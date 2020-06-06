@@ -32,6 +32,8 @@ public abstract class AbstractIdempotence {
         }
     }
 
+    public abstract void shutdown();
+
     protected abstract String constructIdempotenceKey(String correlationId, String processStepId);
 
     /**

@@ -32,21 +32,26 @@ public class FirstDelegate implements JavaDelegate {
         }
 
         String correlationId = (String) execution.getVariable("ID");
-        if (idempotence.entryExists(correlationId, execution)) {
-            idempotence.readBuoyStateIntoProcessVariables(correlationId, execution);
-        } else {
 
-            //begin custom block
-            String put = nonXAResource.put(correlationId, correlationId);
-            if (put != null) {
-                throw new RuntimeException("Idempotence did not work");
+        //For ParallelismTest, synchonization is needed, as a ProcessInstance with the same idempotence key can be executed in parallel.
+        synchronized (idempotence) {
+            if (idempotence.entryExists(correlationId, execution)) {
+                idempotence.readBuoyStateIntoProcessVariables(correlationId, execution);
+                execution.setVariable("idempotence", true);
+            } else {
+
+                //begin custom block
+                String put = nonXAResource.put(correlationId, correlationId);
+                if (put != null) {
+                    throw new RuntimeException("Idempotence did not work");
+                }
+                execution.setVariable("written", "true");
+                //end custom block
+
+                long start = System.nanoTime();
+                idempotence.putBuoy(correlationId, execution);
+                System.out.println("Putting buoy took ns:" + (System.nanoTime() - start));
             }
-            execution.setVariable("written", "true");
-            //end custom block
-
-            long start = System.nanoTime();
-            idempotence.putBuoy(correlationId, execution);
-            System.out.println("Putting buoy took ns:" + (System.nanoTime() - start));
         }
     }
 }

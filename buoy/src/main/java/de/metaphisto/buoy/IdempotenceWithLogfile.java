@@ -73,6 +73,14 @@ public class IdempotenceWithLogfile extends AbstractIdempotence {
         }
     }
 
+    @Override
+    public void shutdown() {
+        synchronized (IdempotenceWithLogfile.class) {
+            persistenceTechnology.close();
+            instance = null;
+        }
+    }
+
     protected String constructIdempotenceKey(String correlationId, String processStepId) {
         return String.join("_", correlationId, processStepId);
     }

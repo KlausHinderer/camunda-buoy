@@ -21,7 +21,6 @@
     </properties>
     <modules>
         <module>buoy</module>
-        <module>test</module>
     </modules>
     <dependencyManagement>
         <dependencies>

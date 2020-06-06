@@ -34,6 +34,14 @@ public class Idempotence extends AbstractIdempotence {
     }
 
     @Override
+    public void shutdown() {
+        synchronized (Idempotence.class) {
+            persistenceTechnology.close();
+            instance = null;
+        }
+    }
+
+    @Override
     protected String constructIdempotenceKey(String correlationId, String processStepId) {
         return String.join("_", correlationId, processStepId);
     }
